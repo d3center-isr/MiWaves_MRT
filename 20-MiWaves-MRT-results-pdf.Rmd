@@ -1,0 +1,472 @@
+---
+title: "MiWaves MRT Analyses Results"
+output: pdf_document
+geometry: margin=2cm
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+
+```
+## Frequencies of Baseline Covariates
+
+Firstly, there are two baseline records for IDs 9, 55 and 102, and for these three IDs I retain the second baseline record. The two baseline submissions are likely due to the survey timing out and participants re-submitting. 
+  
+1.)  CANN_IMPORTANCE_BL: "Right now, how important is it to you to cut back your cannabis use?" Response: 0-10 likert scale: 0=Not at all, 10=Very
+  
+Other options: 
+  
+-  CANN_LIKELY_BL: "Right now, how likely are you to cut back your use of cannabis or cannabis products?" Response: scale of 0=Not at all - 10=Very
+  
+-  CANN_CONF_BL: "How confident are you that you could cut back your use of cannabis or cannabis products if you wanted to?" Response: scale of 0=Not at all - 10=Very
+  
+2.)  CANNHOURS_BL: "During the past month, how many hours, on an average day, did you use cannabis?" Response: Drop down selection 0-24
+  
+3.)  CANNWAKE_BL: "During the past month, how soon did you typically use any cannabis products after you woke up for the day?" Response: 1=Within 5 minutes, 2=6-30 minutes, 3=31 minutes to almost 1 hour, 4=1 to almost 2 hours, 5=2 to almost 4 hours, 6=4 or more hours
+  
+Other options:   
+  
+-  CANNDAYS_BL: "How many days in the past month have you used cannabis?" Response: Drop down selection 0-31
+  
+-  CANNMONTH_BL: "In the past month, how many times per day did you use cannabis?" Response: Drop down selection 0-24
+  
+*Note*: If CANNDAYS_BL>0, then displays CANNHOURS_BL, CANNWAKE_BL, CANNMONTH_BL, CANN_IMPORTANCE_BL, CANN_LIKELY_BL, CANN_CONF_BL. 
+  
+   
+```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE}
+library(tidyverse)
+library(dplyr)
+library(lubridate)
+library(knitr)
+library(ggplot2)
+library(kableExtra)
+
+outdir<-"~/output"
+proc_dat <- "//maize.umhsnas.med.umich.edu/Psychiatry/Restricted/MiWaves/Pilot/Processed Data/"
+
+# load R datafile
+load(file = paste0(proc_dat,"miwaves_analysis_dataset.Rdata"))
+
+prim_dat <- prim_dat %>%
+  # restrict to IDs with completed baseline survey
+  filter( !(is.na(completed_baseline))) %>%
+  mutate(cann_importance_bl= ifelse(is.na(cann_importance_bl),0,cann_importance_bl),
+         cannhours_bl= ifelse(is.na(cannhours_bl),0,cannhours_bl),
+         cannwake_bl= ifelse(is.na(cannwake_bl),0,cannwake_bl))
+
+cann_importance_bl_freq <- prim_dat %>%
+  select(id,cann_importance_bl)%>%
+  distinct(id,cann_importance_bl)%>%
+  mutate(flag=1)%>%
+  group_by(cann_importance_bl) %>%
+  # denominator is 120 IDs in analysis sample
+  summarise( count = sum(flag,na.rm=T),
+             percent = 100*round((count / 120), 3))%>%
+  ungroup()
+
+cann_importance_bl_freq %>%
+  kable(
+    align = "c", caption = "Frequency of baseline variable cannabis importance $(N=120 EAs)$")%>%
+  kable_classic(full_width = F)
+# kbl(cann_importance_bl_freq, booktabs = T)
+
+cannhours_bl_freq <- prim_dat %>%
+  select(id,cannhours_bl)%>%
+  distinct(id,cannhours_bl)%>%
+  mutate(flag=1)%>%
+  group_by(cannhours_bl) %>%
+  # denominator is 120 IDs in analysis sample
+  summarise( count = sum(flag,na.rm=T),
+             percent = 100*round((count / 120), 3))%>%
+  ungroup()
+
+cannhours_bl_freq %>%
+  kable(
+    align = "c", caption = "Frequency of baseline variable cannabis hours $(N=120 EAs)$")%>%
+  kable_classic(full_width = F)
+# kbl(cannhours_bl_freq, booktabs = T)
+
+cannwake_bl_freq <- prim_dat %>%
+  select(id,cannwake_bl)%>%
+  distinct(id,cannwake_bl)%>%
+  mutate(flag=1)%>%
+  group_by(cannwake_bl) %>%
+  # denominator is 120 IDs in analysis sample
+  summarise( count = sum(flag,na.rm=T),
+             percent = 100*round((count / 120), 3))%>%
+  ungroup()
+
+cannwake_bl_freq %>%
+   kable(
+     align = "c", caption = "Frequency of baseline variable cannabis after waking $(N=120 EAs)$")%>%
+   kable_classic(full_width = F)
+
+# kbl(cannwake_bl_freq, booktabs = T)
+```
+\newpage
+## *Preliminary* Causal Excursion Effect Estimates
+  
+**Research Question 1**: Examine whether, on average, there is a proximal effect of delivering an intervention message on proximal cannabis use   
+  
+**Proximal outcome ($Y_{i,t+1}$)**: Proportion of waking hours with self-reported cannabis use (0-1, treated as continuous)  
+    
+**Treatment indicator ($A_{i,t}$)**: Binary (1=Yes message, 0=No message)  
+  
+**Covariates**:  
+  
+-  time of day – binary (AM=0, PM=1),  
+  
+-  day of the week  – binary (weekday=1, weekend [Fri-Sun]=0),  
+  
+-  prior cannabis use – proportion of waking hours averaged over past 4 decision points (i.e., approximately 48 hours), 
+  
+-  prior intervention engagement – score that ranges from 0-3 averaged over past 6 decision points (i.e., approximately 72 hours),  
+  
+-  baseline motivation to change – importance of cutting back cannabis use on a scale from 0 (Not at all) to 10 (Very) at time of baseline survey,  
+  
+-  baseline cannabis use – self-reported average hours of cannabis use in prior day (range: 0-24), during the past month, and 
+  
+-  baseline time to cannabis use - self-reported time to cannabis use, since awaking (1=Within 5 minutes, 2=6-30 minutes, 3=31 minutes to almost 1 hour, 4=1 to almost 2 hours, 5=2 to almost 4 hours, 6=4 or more hours), during the past month.  
+  
+**Candidate Moderators**: We explore whether the effect of the intervention message on proximal cannabis use varries by each of the candidate moderators listed below. 
+  
+1. *timeofday*: time of day – binary (AM=1, PM=0),
+  
+2. *interact_A_message*: interaction type A message vs. no message – binary (interaction type A message=1, no message=0),  
+  
+- 2.2. *interact_B_message*: interaction type B message vs. no message – binary (interaction type B message=1, no message=0),  
+  
+- 2.3. *interact_C_message*: interaction type C message vs. no message – binary (interaction type C message=1, no message=0),
+  
+3. *prop_awakeuse_prior*: prior cannabis use – operationalized the same as the proximal outcome, at the prior decision point,
+  
+- 3.2. *cov_prop_awakeuse_48hrs*: prior cannabis use over the past 4 decision points,
+  
+4. time since under treatment (i.e., since study start) possibly, in weeks,
+  
+5. *week_day_binary1*: day of the week – binary (weekday=1, weekend [Fri-Sun]=0),
+  
+6. *prior_interv_engag*: prior intervention engagement – operationalized the same as the proximal outcome, at the prior decision point,
+  
+- 6.2. *cov_interv_engag_72hrs*: over past 6 decision points,
+  
+7. *prior_sent_message*: prior delivery of a message – binary (yes message=1, no message=0), at the prior decision point,
+  
+- 7.2. number of messages, over past 4 decision points,
+  
+8. *short_message*: short message vs. no message – binary (short message=1, no message=0),  
+  
+- 8.2. *long_message*: long message vs. no message - binary (long message=1, no message=0),  
+  
+9. baseline demographic: biological sex, race/ethnicity (in screening data),
+  
+10. baseline cannabis use severity: a cannabis frequency perspective - via the CANNDAYS_BL  (number of days used cannabis in past month),
+  
+- 10.2. based on diagnostic severity, DSMSC1_BL through DSMSC11_BL, count of number of symptoms endorsed,
+  
+11. baseline motivation to change, and 
+  
+12. baseline mental health (e.g., PHQ-2)
+
+```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE}
+library(tidyverse)
+library(dplyr)
+library(lubridate)
+library(knitr)
+library(ggplot2)
+library(kableExtra)
+library(MRTAnalysis)
+library(gt)
+
+df <- prim_dat %>%
+  arrange(id,decision_point) %>%
+  rename(actioni=intmessage_randassignment, probi= intmessage_randprob, 
+         prior_interv_engag = interv_engagement) %>%
+  mutate(timeofday = ifelse(morning==1,0,1),
+         message_interaction_type = ifelse(message_type == "A",1,
+                                      ifelse(message_type=="B",2,
+                                             ifelse(message_type=="C",3,1))),
+         message_interaction_type = as.factor(message_interaction_type),
+         prior_sent_message = lag(actioni)
+        ) %>%
+  filter(!is.na(cov_prop_awakeuse_48hrs))
+
+#print(paste0("Sample size: ",nrow(df)))
+
+r <- list()
+
+fit_wocov <- wcls(
+    data = df,
+    id = "id",
+    outcome = "prop_awakeuse",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~1,
+    control_formula = ~1
+)
+
+r[[1]] <- summary(fit_wocov)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Main Effect Model (no covars)")
+  
+fit_wcov <- wcls(
+    data = df,
+    id = "id",
+    outcome = "prop_awakeuse",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~1,
+    control_formula = ~ cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+)
+
+r[[2]] <- summary(fit_wcov)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Main Effect Model (with covars)")
+
+
+fit1 <- wcls(
+    data = df,
+    id = "id",
+    outcome = "prop_awakeuse",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~timeofday,
+    control_formula = ~ cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+)
+
+r[[3]] <- summary(fit1)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 1")
+
+# type of interaction (A, B or C) – categorical (A=0, B=1, C=2)
+df_temp <- df %>% 
+  # restrict to interaction A type message and no message
+  filter(!(message_type %in% c("B","C"))) %>%
+  mutate(interact_A_message = ifelse(actioni==0,0,1))
+fit2 <- wcls(
+    data = df_temp,
+    id = "id",
+    outcome = "prop_awakeuse",
+    treatment = "interact_A_message",
+    rand_prob = "probi",
+    moderator_formula = ~1,
+    control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+)
+
+r[[4]] <- summary(fit2)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 2")
+
+
+# type of interaction (A, B or C) – categorical (A=0, B=1, C=2)
+df_temp <- df %>% 
+  # restrict to interaction B type message and no message
+  filter(!(message_type %in% c("A","C"))) %>%
+  mutate(interact_B_message = ifelse(actioni==0,0,1))
+
+fit2b <- wcls(
+    data = df_temp,
+    id = "id",
+    outcome = "prop_awakeuse",
+    treatment = "interact_B_message",
+    rand_prob = "probi",
+    moderator_formula = ~1,
+    control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+)
+
+r[[5]] <- summary(fit2b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 2.2")
+
+
+# type of interaction (A, B or C) – categorical (A=0, B=1, C=2)
+df_temp <- df %>% 
+  # restrict to interaction B type message and no message
+  filter(!(message_type %in% c("A","B"))) %>%
+  mutate(interact_C_message = ifelse(actioni==0,0,1))
+
+fit2c <- wcls(
+    data = df_temp,
+    id = "id",
+    outcome = "prop_awakeuse",
+    treatment = "interact_C_message",
+    rand_prob = "probi",
+    moderator_formula = ~1,
+    control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+)
+
+r[[6]] <- summary(fit2c)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 2.3")
+
+
+df_temp <- df %>% filter(!is.na(prop_awakeuse_prior)) 
+
+fit3 <- wcls(
+    data = df_temp,
+    id = "id",
+    outcome = "prop_awakeuse",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~prop_awakeuse_prior,
+    control_formula = ~prop_awakeuse_prior + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+)
+
+r[[7]] <- summary(fit3)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 3")
+
+
+fit3b <- wcls(
+    data = df,
+    id = "id",
+    outcome = "prop_awakeuse",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~cov_prop_awakeuse_48hrs,
+    control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+)
+
+r[[8]] <- summary(fit3b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 3.2")
+
+
+fit5 <- wcls(
+    data = df,
+    id = "id",
+    outcome = "prop_awakeuse",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~week_day_binary,
+    control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+)
+
+r[[9]] <- summary(fit5)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 5")
+
+df_temp <- df %>% filter(!is.na(prior_interv_engag)) 
+fit6 <- wcls(
+    data = df_temp,
+    id = "id",
+    outcome = "prop_awakeuse",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~prior_interv_engag,
+    control_formula = ~cov_prop_awakeuse_48hrs + prior_interv_engag  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+)
+
+r[[10]] <- summary(fit6)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 6")
+
+fit6b <- wcls(
+    data = df,
+    id = "id",
+    outcome = "prop_awakeuse",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~cov_interv_engag_72hrs,
+    control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+)
+
+r[[11]] <- summary(fit6b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 6.2")
+
+df_temp <- df %>% filter(!is.na(prior_sent_message)) 
+fit7 <- wcls(
+    data = df_temp,
+    id = "id",
+    outcome = "prop_awakeuse",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~prior_sent_message,
+    control_formula = ~prior_sent_message + cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+)
+
+r[[12]] <- summary(fit7)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 7")
+
+# fit7b <- wcls(
+#     data = df,
+#     id = "id",
+#     outcome = "prop_awakeuse",
+#     treatment = "actioni",
+#     rand_prob = "probi",
+#     moderator_formula = ~cov_interv_engag_72hrs,
+#     control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+# )
+# 
+# r[[13]] <- summary(fit7b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+#   mutate(model="Moderation Effect Model 7.2")
+
+# short vs no message
+# df_temp <- df %>%
+#   # restrict to short message and no message
+#   filter(message_length!="Long") %>%
+#   mutate(short_message = ifelse(actioni==0,0,1))
+# 
+# fit8 <- wcls(
+#     data = df_temp,
+#     id = "id",
+#     outcome = "prop_awakeuse",
+#     treatment = "short_message",
+#     rand_prob = "probi",
+#     moderator_formula = ~1,
+#     control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+# )
+# 
+# r[[13]] <- summary(fit8)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+#   mutate(model="Moderation Effect Model 8")
+
+
+# # long vs no message
+# df_temp <- df %>%
+#   # restrict to long message and no message
+#   filter(message_length!="Short") %>%
+#   mutate(long_message = ifelse(actioni==0,0,1))
+# 
+# fit8b <- wcls(
+#     data = df_temp,
+#     id = "id",
+#     outcome = "prop_awakeuse",
+#     treatment = "long_message",
+#     rand_prob = "probi",
+#     moderator_formula = ~1,
+#     control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+# )
+# 
+# r[[14]] <- summary(fit8b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+#   mutate(model="Moderation Effect Model 8.2")
+
+
+res <- r %>% map_df(bind_rows) %>% select(model, everything())
+
+
+# create table with output
+res_table <- function(res){
+    res %>%
+      mutate(term = str_replace(term, "\\(Intercept\\)", "Intercept")) %>%
+      rename(Term = term)%>%
+      select(-model) %>%
+      kableExtra::kbl(booktabs = TRUE, 
+                      digits=3,
+                      format = "latex",
+                      caption = NULL) %>%
+      kableExtra::kable_styling(
+        latex_options = c("striped", "hold_position"),
+        font_size = 10,
+        full_width = TRUE
+      ) %>%
+      kableExtra::pack_rows(index = table(res$model)) %>%
+      kableExtra::column_spec(1, width = "4.6cm") %>%
+      kableExtra::column_spec(7, width = "1cm") %>%
+      kableExtra::column_spec(8, width = "1cm") %>%
+      kableExtra::footnote(
+        general = "baseline cannabis use, and baseline time to cannabis use.", general_title = "", footnote_as_chunk = T
+      ) %>%
+      kableExtra::footnote(
+        general = "prior cannabis use, prior intervention engagement, baseline motivation to change,",
+        general_title = "", footnote_as_chunk = T
+      )%>%
+      kableExtra::footnote(
+        general = "Moderation Effect Models include the covariates: time of day, day of week,", general_title = "", footnote_as_chunk = T
+      ) %>%
+      kableExtra::footnote(
+        general = "Notes: Standard errors are not yet adjusted to account for RL uncertainty.", general_title = "", footnote_as_chunk = T
+      ) 
+}
+
+res_table(res)
+```
