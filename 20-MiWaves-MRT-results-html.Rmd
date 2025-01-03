@@ -10,7 +10,7 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 ```
 ## Frequencies of Baseline Covariates
 
-Firstly, there are two baseline records for IDs 9 (populated both first and second submissions), 55 (partial first submission and populated second submission) and 102 (partial first submission and populated second submission), and for these three IDs I retain the second baseline record.  
+Firstly, there are two baseline records for IDs 9, 55 and 102, and for these three IDs I retain the second baseline record. The two baseline submissions are likely due to the survey timing out and participants re-submitting. 
   
 1.)  CANN_IMPORTANCE_BL: "Right now, how important is it to you to cut back your cannabis use?" Response: 0-10 likert scale: 0=Not at all, 10=Very
   
@@ -36,9 +36,6 @@ Other options:
 ```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE}
 library(tidyverse)
 library(dplyr)
-library(rtf)
-library(jsonlite)
-library(tidyjson)
 library(lubridate)
 library(knitr)
 library(ggplot2)
@@ -107,7 +104,7 @@ cannwake_bl_freq %>%
 # kbl(cannwake_bl_freq, booktabs = T)
 ```
 
-## *Preliminary* Causal Excursion Effects
+## *Preliminary* Causal Excursion Effect Estimates
   
 **Research Question 1**: Examine whether, on average, there is a proximal effect of delivering an intervention message on proximal cannabis use   
   
@@ -283,7 +280,6 @@ fit7b <- wcls(
 r[[8]] <- summary(fit7b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Model 1G Version 2 (w/ covars & interaction)")
 
-
 df_modH <- df %>% filter(!is.na(prior_sent_message)) 
 fit8a <- wcls(
     data = df_modH,
@@ -332,9 +328,8 @@ r[[9]] <- summary(fit8a)$causal_excursion_effect %>% as_tibble(rownames = "term"
 res <- r %>% map_df(bind_rows) %>% select(model, everything())
 
 
-# table output
-
-out_table <- function(res){
+# create table with output
+res_table <- function(res){
   if (knitr::is_latex_output()) {
     res %>%
       mutate(term = str_replace(term, "\\(Intercept\\)", "Intercept")) %>%
@@ -394,5 +389,5 @@ out_table <- function(res){
   }
 }
 
-out_table(res)
+res_table(res)
 ```
