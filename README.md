@@ -6,7 +6,7 @@ MiWaves is a mobile health personalized just-in-time adaptive intervention to as
   
 ## 2. About this repository
   
-This repository contains the files associated with the after-study analysis for MiWaves, including the code and documentation detailing the processing and curation of the pilot data.  
+This repository contains the files associated with the after-study analysis for MiWaves, including the code and documentation detailing the processing and curation of the pilot data. To submit questions about this content, navigate to https://github.com/d3center-isr/MiWaves_MRT/issues and click to submit a *New issue*.
   
 ## 3. Table of Contents 
   
