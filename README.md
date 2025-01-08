@@ -1,5 +1,9 @@
 # MiWaves: Code and Documentation of Processing for Micro-Randomized Trial Data
+
+## 0. Preliminary Statement  
   
+*The materials in this repository are in progress and are subject to change.*
+
 ## 1. MiWaves Pilot Trial
   
 MiWaves is a mobile health personalized just-in-time adaptive intervention to assist with reducing cannabis use among emerging adults with regular cannabis use and motivation to change. 
