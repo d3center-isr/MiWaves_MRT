@@ -1,6 +1,5 @@
 # Project: MiWaves
 # Description: Descriptive plots and tables of proximal outcomes and other variables
-# Author: Lauren Zimmermann
 
 need_package <- c("dplyr","tidyverse","lubridate")
 have_package <- need_package %in% rownames(installed.packages())
