@@ -172,7 +172,7 @@ print(p3)
   
 -  time of day – binary (AM=0, PM=1),  
   
--  day of the week  – binary (weekday=1, weekend [Fri-Sun]=0),  
+-  day of the week – binary (weekday=1, weekend [Fri-Sun]=0),  
   
 -  prior cannabis use – proportion of waking hours averaged over past 4 decision points (i.e., approximately 48 hours), 
   
@@ -184,7 +184,7 @@ print(p3)
   
 -  baseline time to cannabis use - self-reported time to cannabis use, since awaking (1=Within 5 minutes, 2=6-30 minutes, 3=31 minutes to almost 1 hour, 4=1 to almost 2 hours, 5=2 to almost 4 hours, 6=4 or more hours), during the past month.  
   
-**Candidate Moderators**: We explore whether the effect of the intervention message on proximal cannabis use varries by each of the candidate moderators listed below. 
+**Candidate Moderators**: We explore whether the effect of the intervention message on proximal cannabis use varies by each of the candidate moderators listed below. 
   
 1. *timeofday*: time of day – binary (AM=1, PM=0),
   
@@ -224,10 +224,19 @@ print(p3)
   
 - 12.2. *dsmsc_tot_bl*: baseline cannabis use severity that is the count of number of symptoms endorsed (range: 0-11), which reflects diagnostic severity,  
   
-13. *cann_importance_bl*: baseline motivation to change that is the importance of cutting back cannabis use on a scale from 0 (Not at all) to 10 (Very) at time of baseline survey, and 
+13. *cann_importance_bl*: baseline motivation to change that is the importance of cutting back cannabis use on a scale from 0 (Not at all) to 10 (Very) at time of baseline survey, 
+  
+- 13.2. *high_cann_importance_bl* [a]: baseline motivation to change - binary (0=low motivation to change [score<5], 1=high motivation to change [score>=5]),
+  
+- 13.3. *cann_likely_bl* [a]: baseline likelihood to change that is how likely one is to cut back cannabis use on a scale from 0 (Not at all) to 10 (Very) at the time of baseline survey,  
+  
+- 13.4. *cann_conf_bl* [a]: baseline confidence to change that is how confident one is to cut back cannabis use on a scale from 0 (Not at all) to 10 (Very) at the time of baseline survey, 
   
 14. *phq2_tot_bl*: baseline mental health, which is the sum across two item scale PHQ-2 ("Over the last two weeks, how often have you been bothered by any of the following problems? Little interest or pleasure in doing things" and "Over the last two weeks, how often have you been bothered by any of the following problems? Feeling down, depressed, or hopeless" with response values of 0=Not at all, 1= Several days, 2=More than half the days, and 3=Nearly every day).
 
+[a] Note: This candidate moderator was included after the list of moderators was formalized.
+
+\newpage
 ```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE}
 library(tidyverse)
 library(dplyr)
@@ -656,6 +665,7 @@ res_table <- function(res){
 res_table(res)
 ```
 
+\newpage
 
 # 2. Primary Aims Analysis (Part 2) with Proximal Intervention Engagement Outcome
     
@@ -671,12 +681,65 @@ res_table(res)
   
 -  time of day – binary (AM=0, PM=1),  
   
--  day of the week  – binary (weekday=1, weekend [Fri-Sun]=0),  
+-  day of the week – binary (weekday=1, weekend [Fri-Sun]=0),  
   
 -  prior intervention engagement – score that ranges from 0-3 averaged over past 6 decision points (i.e., approximately 72 hours), 
   
 -  prior human-touch engagement – binary (1=yes, 0=no) for any email, text, or phone call made by study staff (after 72 hours, 120 hours, and 168 hours [1 week])  over past 4 decision points (i.e., approximately 48 hours).  
   
+**Candidate Moderators**: We explore whether the effect of the intervention message on proximal intervention engagement differs by each of the candidate moderators listed below. 
+  
+1. *timeofday*: time of day – binary (AM=1, PM=0),
+  
+2. *prior_interv_engag*: prior intervention engagement – operationalized the same as the proximal outcome, at the prior decision point,
+  
+- 2.2. *cov_interv_engag_72hrs*: over past 6 decision points,
+
+3. *prop_awakeuse_prior*: prior cannabis use – operationalized the same as the proximal outcome, at the prior decision point,
+  
+- 3.2. *cov_prop_awakeuse_48hrs*: prior cannabis use over the past 4 decision points,
+  
+4. *wks_since_interv_start*: time since under treatment (i.e., since intervention start) in weeks,
+  
+5. *week_day_binary1*: day of the week – binary (weekday=1, weekend [Fri-Sun]=0),
+  
+6. *prior_sent_message*: prior delivery of a message – binary (yes message=1, no message=0), at the prior decision point,
+  
+- 6.2. *prior_sent_messages_48hrs*: number of messages sent over past 4 decision points,
+
+7. *interact_A_message*: interaction type A message vs. no message – binary (interaction type A message=1, no message=0),  
+  
+- 7.2. *interact_B_message*: interaction type B message vs. no message – binary (interaction type B message=1, no message=0),  
+  
+- 7.3. *interact_C_message*: interaction type C message vs. no message – binary (interaction type C message=1, no message=0),
+  
+8. *short_message*: short message vs. no message – binary (short message=1, no message=0),  
+  
+- 8.2. *long_message*: long message vs. no message - binary (long message=1, no message=0),  
+  
+9. *cov_humtch_binary_48hrs*: prior human-touch engagement – binary (1=yes, 0=no) for any email, text, or phone call made by study staff (after 72 hours, 120 hours, and 168 hours [1 week])  over past 4 decision points (i.e., approximately 48 hours),
+   
+10. *sex*: baseline demographic of biological sex (female=1,male=0),  
+  
+11. *race*: baseline demographic of race (white=1, 0=non-white),   
+  
+12. *ethnicity*: baseline demographic of ethnicity (1=not hispanic or latino, 0=hispanic or latino),
+  
+13. *canndays_bl*: baseline cannabis use severity that is the number of days used cannabis in past month (range: 0-31), which reflects cannabis use frequency, 
+  
+- 13.2. *dsmsc_tot_bl*: baseline cannabis use severity that is the count of number of symptoms endorsed (range: 0-11), which reflects diagnostic severity,  
+  
+14. *cann_importance_bl*: baseline motivation to change that is the importance of cutting back cannabis use on a scale from 0 (Not at all) to 10 (Very) at time of baseline survey, and 
+  
+- 14.2. *high_cann_importance_bl* [a]: baseline motivation to change - binary (0=low motivation to change [score<5], 1=high motivation to change [score>=5]),
+  
+- 14.3. *cann_likely_bl* [a]: baseline likelihood to change that is how likely one is to cut back cannabis use on a scale from 0 (Not at all) to 10 (Very) at the time of baseline survey,  
+  
+- 14.4. *cann_conf_bl* [a]: baseline confidence to change that is how confident one is to cut back cannabis use on a scale from 0 (Not at all) to 10 (Very) at the time of baseline survey, 
+  
+15. *phq2_tot_bl*: baseline mental health, which is the sum across two item scale PHQ-2 ("Over the last two weeks, how often have you been bothered by any of the following problems? Little interest or pleasure in doing things" and "Over the last two weeks, how often have you been bothered by any of the following problems? Feeling down, depressed, or hopeless" with response values of 0=Not at all, 1= Several days, 2=More than half the days, and 3=Nearly every day).
+
+[a] Note: This candidate moderator was included after the list of moderators was formalized.
 
 ```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE}
 library(tidyverse)
