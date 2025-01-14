@@ -8,6 +8,8 @@ geometry: margin=2cm
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 
 ```
+# 1. Primary Aims Analysis (Part 1) with Proximal Cannabis Use Outcome 
+  
 ## Frequencies of Baseline Covariates
 
 Firstly, there are two baseline records for three IDs. For these three IDs, the second baseline record is retained. The two baseline submissions are likely due to the survey timing out and participants re-submitting. 
@@ -645,6 +647,138 @@ res_table <- function(res){
       )%>%
       kableExtra::footnote(
         general = "Moderation Effect Models include the covariates: time of day, day of week,", general_title = "", footnote_as_chunk = T
+      ) %>%
+      kableExtra::footnote(
+        general = "Notes: Standard errors are not yet adjusted to account for RL uncertainty.", general_title = "", footnote_as_chunk = T
+      ) 
+}
+
+res_table(res)
+```
+
+
+# 2. Primary Aims Analysis (Part 2) with Proximal Intervention Engagement Outcome
+    
+## *Preliminary* Causal Excursion Effect Estimates
+  
+**Research Question 1**: Investigate whether, on average, there is a proximal effect of delivering an intervention message on proximal intervention engagement.   
+  
+**Proximal outcome ($Y_{i,t+1}$)**: Intervention engagement (discrete: 0-3, treated as continuous)  
+    
+**Treatment indicator ($A_{i,t}$)**: Binary (1=Yes message, 0=No message)  
+  
+**Covariates**:  
+  
+-  time of day – binary (AM=0, PM=1),  
+  
+-  day of the week  – binary (weekday=1, weekend [Fri-Sun]=0),  
+  
+-  prior intervention engagement – score that ranges from 0-3 averaged over past 6 decision points (i.e., approximately 72 hours), 
+  
+-  prior human-touch engagement – binary (1=yes, 0=no) for any email, text, or phone call made by study staff (after 72 hours, 120 hours, and 168 hours [1 week])  over past 4 decision points (i.e., approximately 48 hours).  
+  
+
+```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE}
+library(tidyverse)
+library(dplyr)
+library(lubridate)
+library(knitr)
+library(ggplot2)
+library(kableExtra)
+library(MRTAnalysis)
+library(gt)
+
+df <- prim_dat %>%
+  arrange(id,decision_point) %>%
+  rename(actioni=intmessage_randassignment, probi= intmessage_randprob, 
+         prior_interv_engag = interv_engagement) %>%
+  mutate(timeofday = ifelse(morning==1,0,1),
+         message_interaction_type = ifelse(message_type == "A",1,
+                                      ifelse(message_type=="B",2,
+                                             ifelse(message_type=="C",3,1))),
+         message_interaction_type = as.factor(message_interaction_type),
+         message_length = ifelse(is.na(message_length),"Not applicable",message_length),
+         # create time since under treatment (i.e., since study start) in weeks
+         wks_since_interv_start = case_when(day<=7 ~ 1,
+                                              (day>7) & (day<=14) ~ 2,
+                                              (day>14) & (day<=21) ~ 3,
+                                              (day>21) & (day<=30) ~ 4)
+         
+        ) %>%
+  group_by(id) %>%
+  mutate(# create prior sending of a message candidate moderator
+         prior_sent_message = lag(actioni)
+         ) %>%
+  ungroup()
+  #filter(!is.na(cov_prop_awakeuse_48hrs))
+
+        
+#print(paste0("Sample size: ",nrow(df)))
+
+r <- list()
+
+fit_wocov <- wcls(
+    data = df,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~1,
+    control_formula = ~1
+)
+
+r[[1]] <- summary(fit_wocov)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Main Effect Model (no covars)")
+  
+fit_wcov <- wcls(
+    data = df,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~1,
+    control_formula = ~ timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[2]] <- summary(fit_wcov)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Main Effect Model (with covars)")
+
+res <- r %>% 
+  map_df(bind_rows) %>% 
+  select(model, everything()) %>%
+  dplyr::mutate(model_num = gsub("Moderation Effect Model ","",model),
+         model_num = ifelse(model=="Main Effect Model (no covars)","0",
+                            ifelse(model=="Main Effect Model (with covars)","0.5",model_num)),
+         model_num = as.numeric(model_num)
+  )%>%
+  dplyr::arrange(model_num) 
+
+# create table with output
+res_table <- function(res){
+    res %>%
+      mutate(term = str_replace(term, "\\(Intercept\\)", "Intercept")) %>%
+      rename(Term = term)%>%
+      select(-c(model,model_num)) %>%
+      kableExtra::kbl(booktabs = TRUE, 
+                      longtable = TRUE,
+                      digits=3,
+                      format = "latex",
+                      caption = NULL) %>%
+      kableExtra::kable_styling(
+        latex_options = c("striped", "hold_position", "repeat_header"),
+        font_size = 10
+        #full_width = TRUE
+      ) %>%
+      kableExtra::pack_rows(index = table(fct_inorder(res$model))) %>%
+      kableExtra::column_spec(1, width = "4.7cm") %>%
+      kableExtra::column_spec(7, width = "1cm") %>%
+      kableExtra::column_spec(8, width = "1cm") %>%
+      kableExtra::footnote(
+        general = "prior intervention engagement, and prior human-touch engagement.",
+        general_title = "", footnote_as_chunk = T
+      )%>%
+      kableExtra::footnote(
+        general = "Model with covariates adjusts for the following: time of day, day of week,", general_title = "", footnote_as_chunk = T
       ) %>%
       kableExtra::footnote(
         general = "Notes: Standard errors are not yet adjusted to account for RL uncertainty.", general_title = "", footnote_as_chunk = T
