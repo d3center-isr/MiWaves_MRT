@@ -47,25 +47,62 @@ outdir<-"~/output"
 proc_dat <- "//maize.umhsnas.med.umich.edu/Psychiatry/Restricted/MiWaves/Pilot/Processed Data/"
 
 # load R datafile
-load(file = paste0(proc_dat,"miwaves_analysis_dataset_w_bl.Rdata"))
+ load(file = paste0(proc_dat,"miwaves_analysis_dataset_w_bl.Rdata"))
 
-prim_dat <- prim_dat %>%
-  # restrict to participants with at least 3 completed EMAs
-  filter(num_emas_l >= 3) %>%
-  # remove observations where the randomization information is missing
-  filter(missing_rand != 1) %>%
-  #filter(completed_ema_l==1)
-  filter(!is.na(prop_awakeuse))
-#filter(is.na(prop_awakeuse) & !is.na(prop_use_unadj_l))
-  
-prim_dat <- prim_dat %>%
+full_dat <- prim_dat %>%
+  dplyr::arrange(id,decision_point) %>%
   # restrict to IDs with completed baseline survey
-  filter( !(is.na(completed_baseline))) %>%
-  mutate(cann_importance_bl= ifelse(is.na(cann_importance_bl),0,cann_importance_bl),
+  dplyr::filter( !(is.na(completed_baseline))) %>%
+  dplyr::mutate(cann_importance_bl= ifelse(is.na(cann_importance_bl),0,cann_importance_bl),
+         cann_likely_bl= ifelse(is.na(cann_likely_bl),0,cann_likely_bl),
+         cann_conf_bl= ifelse(is.na(cann_conf_bl),0,cann_conf_bl),
          cannhours_bl= ifelse(is.na(cannhours_bl),0,cannhours_bl),
-         cannwake_bl= ifelse(is.na(cannwake_bl),0,cannwake_bl))
+         cannwake_bl= ifelse(is.na(cannwake_bl),0,cannwake_bl),
+         high_cann_importance_bl = ifelse(cann_importance_bl < 5, 0,
+                                          ifelse(cann_importance_bl >= 5, 1, 999)),
+         high_cann_importance_bl = factor(high_cann_importance_bl, levels=c(0,1)),
+         sex = factor(sex, levels=c(1,2), labels=c("Male", "Female")),
+         male_sex = ifelse(sex=="Male", 1, 0),
+         male_sex = factor(male_sex),
+         white_race = factor(white_race),
+         ethnicity = factor(ethnicity, levels=c(1,2), labels=c("Hispanic or Latino", "Not Hispanic or Latino")),
+         hispanic_ethn = ifelse(ethnicity=="Hispanic or Latino", 1, 0),
+         hispanic_ethn = factor(hispanic_ethn)) %>%
+  dplyr::rename(actioni=intmessage_randassignment, probi= intmessage_randprob, 
+         prior_interv_engag = interv_engagement) %>%
+  dplyr::mutate(timeofday = ifelse(morning==1,0,1),
+                timeofday = factor(timeofday, levels=c(0,1), labels=c("AM", "PM")),
+                week_day_binary = factor(week_day_binary),
+         message_interaction_type = ifelse(message_type == "A",1,
+                                      ifelse(message_type=="B",2,
+                                             ifelse(message_type=="C",3,1))),
+         message_interaction_type = as.factor(message_interaction_type),
+         message_length = ifelse(is.na(message_length),"Not applicable",message_length),
+         # create time since under treatment (i.e., since study start) in weeks
+         wks_since_interv_start = case_when(day<=7              ~ 1,
+                                           (day>7) & (day<=14)  ~ 2,
+                                           (day>14) & (day<=21) ~ 3,
+                                           (day>21) & (day<=30) ~ 4),
+         after_day15 = case_when(day<=15 ~ 0,
+                                 day>15  ~ 1),
+         after_day15 = factor(after_day15)
+        ) %>%
+  dplyr::group_by(id) %>%
+  dplyr::mutate(# create prior sending of a message candidate moderator
+         prior_sent_message = lag(actioni)
+         ) %>%
+  dplyr::ungroup() 
 
-cann_importance_bl_freq <- prim_dat %>%
+df <- full_dat %>%
+  # restrict to participants with at least 3 completed EMAs
+  dplyr::filter(num_emas_l >= 3) %>%
+  # remove observations where the randomization information is missing
+  dplyr::filter(missing_rand != 1) %>%
+  dplyr::filter(!is.na(prop_awakeuse))%>%
+  dplyr::filter(!is.na(cov_prop_awakeuse_48hrs))
+  
+
+cann_importance_bl_freq <- df %>%
   select(id,cann_importance_bl)%>%
   distinct(id,cann_importance_bl)%>%
   mutate(flag=1)%>%
@@ -80,7 +117,53 @@ cann_importance_bl_freq %>%
     align = "c", caption = "Frequency of baseline variable cannabis importance $(N=120 EAs)$")%>%
   kable_classic(full_width = F)
 
-cannhours_bl_freq <- prim_dat %>%
+
+high_cann_importance_bl_freq <- df %>%
+  select(id,high_cann_importance_bl)%>%
+  distinct(id,high_cann_importance_bl)%>%
+  mutate(flag=1)%>%
+  group_by(high_cann_importance_bl) %>%
+  # denominator is 120 IDs in analysis sample
+  summarise( count = sum(flag,na.rm=T),
+             percent = 100*round((count / 120), 3))%>%
+  ungroup()
+
+high_cann_importance_bl_freq %>%
+  kable(
+    align = "c", caption = "Frequency of baseline dichotomized variable high cannabis importance $(N=120 EAs)$")%>%
+  kable_classic(full_width = F)
+
+cann_likely_bl_freq <- df %>%
+  select(id,cann_likely_bl)%>%
+  distinct(id,cann_likely_bl)%>%
+  mutate(flag=1)%>%
+  group_by(cann_likely_bl) %>%
+  # denominator is 120 IDs in analysis sample
+  summarise( count = sum(flag,na.rm=T),
+             percent = 100*round((count / 120), 3))%>%
+  ungroup()
+
+cann_likely_bl_freq %>%
+  kable(
+    align = "c", caption = "Frequency of baseline variable cannabis likely $(N=120 EAs)$")%>%
+  kable_classic(full_width = F)
+
+cann_conf_bl_freq <- df %>%
+  select(id,cann_conf_bl)%>%
+  distinct(id,cann_conf_bl)%>%
+  mutate(flag=1)%>%
+  group_by(cann_conf_bl) %>%
+  # denominator is 120 IDs in analysis sample
+  summarise( count = sum(flag,na.rm=T),
+             percent = 100*round((count / 120), 3))%>%
+  ungroup()
+
+cann_conf_bl_freq %>%
+  kable(
+    align = "c", caption = "Frequency of baseline variable cannabis confidence $(N=120 EAs)$")%>%
+  kable_classic(full_width = F)
+
+cannhours_bl_freq <- df %>%
   select(id,cannhours_bl)%>%
   distinct(id,cannhours_bl)%>%
   mutate(flag=1)%>%
@@ -95,7 +178,7 @@ cannhours_bl_freq %>%
     align = "c", caption = "Frequency of baseline variable cannabis hours $(N=120 EAs)$")%>%
   kable_classic(full_width = F)
 
-cannwake_bl_freq <- prim_dat %>%
+cannwake_bl_freq <- df %>%
   select(id,cannwake_bl)%>%
   distinct(id,cannwake_bl)%>%
   mutate(flag=1)%>%
@@ -121,7 +204,7 @@ library(knitr)
 library(ggplot2)
 
 
-prim_dat$Action = factor(prim_dat$intmessage_randassignment,levels=c(0,1),labels=c("No Message","Yes Message"))
+df$Action = factor(df$actioni,levels=c(0,1),labels=c("No Message","Yes Message"))
 
 colors <- c("#dc0000ff","#00a087ff")
 plot_violin <- function(dat, category_lbl, x_axis_lbl, metric, metric_lbl, low_limit, high_limit) {
@@ -143,16 +226,16 @@ plot_violin <- function(dat, category_lbl, x_axis_lbl, metric, metric_lbl, low_l
 }
 
 # Proportion of Awake Hours with Self-Reported Cannabis Use
-xlabs <- paste(c("Male","Female"),"\n(n=",table(prim_dat$sex_lbl),")",sep="")
-p1 <-plot_violin(dat=prim_dat, category_lbl="sex_lbl", x_axis_lbl="Biological Sex", metric="prop_awakeuse",metric_lbl="Self-Reported Proportion of Waking Hours Using Cannabis", low_limit = 0.0, high_limit=1)
+xlabs <- paste(c("Male","Female"),"\n(n=",table(df$sex_lbl),")",sep="")
+p1 <-plot_violin(dat=df, category_lbl="sex_lbl", x_axis_lbl="Biological Sex", metric="prop_awakeuse",metric_lbl="Self-Reported Proportion of Waking Hours Using Cannabis", low_limit = 0.0, high_limit=1)
 print(p1)
 
-xlabs <- paste(c("Asian","Black/African American", "> 1 race","Other", "Unknown", "White"),"\n(n=",table(prim_dat$race_lbl),")",sep="")
-p2 <-plot_violin(dat=prim_dat, category_lbl="race_lbl", x_axis_lbl="Self-Reported Race", metric="prop_awakeuse",metric_lbl="Self-Reported Proportion of Waking Hours Using Cannabis", low_limit = 0.0, high_limit=1)
+xlabs <- paste(c("Asian","Black/African American", "> 1 race","Other", "Unknown", "White"),"\n(n=",table(df$race_lbl),")",sep="")
+p2 <-plot_violin(dat=df, category_lbl="race_lbl", x_axis_lbl="Self-Reported Race", metric="prop_awakeuse",metric_lbl="Self-Reported Proportion of Waking Hours Using Cannabis", low_limit = 0.0, high_limit=1)
 print(p2)
 
-xlabs <- paste(c("Hispanic or Latino","Not Hispanic or Latino"),"\n(n=",table(prim_dat$ethnicity_lbl),")",sep="")
-p3 <-plot_violin(dat=prim_dat, category_lbl="ethnicity_lbl", x_axis_lbl="Self-Reported Ethnicity", metric="prop_awakeuse",metric_lbl="Self-Reported Proportion of Waking Hours Using Cannabis", low_limit = 0.0, high_limit=1)
+xlabs <- paste(c("Hispanic or Latino","Not Hispanic or Latino"),"\n(n=",table(df$ethnicity_lbl),")",sep="")
+p3 <-plot_violin(dat=df, category_lbl="ethnicity_lbl", x_axis_lbl="Self-Reported Ethnicity", metric="prop_awakeuse",metric_lbl="Self-Reported Proportion of Waking Hours Using Cannabis", low_limit = 0.0, high_limit=1)
 print(p3)
 
 
@@ -186,7 +269,7 @@ print(p3)
   
 **Candidate Moderators**: We explore whether the effect of the intervention message on proximal cannabis use varies by each of the candidate moderators listed below. 
   
-1. *timeofday*: time of day – binary (AM=1, PM=0),
+1. *timeofday*: time of day – binary (AM=0, PM=1),
   
 2. *interact_A_message*: interaction type A message vs. no message – binary (interaction type A message=1, no message=0),  
   
@@ -199,8 +282,10 @@ print(p3)
 - 3.2. *cov_prop_awakeuse_48hrs*: prior cannabis use over the past 4 decision points,
   
 4. *wks_since_interv_start*: time since under treatment (i.e., since intervention start) in weeks,
+
+- 4.2 *after_day15* [a]: time since under treatment (i.e., since intervention start) dichotomized (0=before and including day 15, 1=after day 15),
   
-5. *week_day_binary1*: day of the week – binary (weekday=1, weekend [Fri-Sun]=0),
+5. *week_day_binary*: day of the week – binary (weekday=1, weekend [Fri-Sun]=0),
   
 6. *prior_interv_engag*: prior intervention engagement – operationalized the same as the proximal outcome, at the prior decision point,
   
@@ -214,11 +299,11 @@ print(p3)
   
 - 8.2. *long_message*: long message vs. no message - binary (long message=1, no message=0),  
   
-9. *sex*: baseline demographic of biological sex (female=1,male=0),  
+9. *male_sex*: baseline demographic of male biological sex (0=female,1=male),  
   
-10. *race*: baseline demographic of race (white=1, 0=non-white),   
+10. *white_race*: baseline demographic of white race (0=not white, 1=white),   
   
-11. *ethnicity*: baseline demographic of ethnicity (1=not hispanic or latino, 0=hispanic or latino),
+11. *hispanic_ethn*: baseline demographic of hispanic or latino ethnicity (0=not hispanic or latino, 1=hispanic or latino),
   
 12. *canndays_bl*: baseline cannabis use severity that is the number of days used cannabis in past month (range: 0-31), which reflects cannabis use frequency, 
   
@@ -247,31 +332,6 @@ library(kableExtra)
 library(MRTAnalysis)
 library(gt)
 
-df <- prim_dat %>%
-  arrange(id,decision_point) %>%
-  rename(actioni=intmessage_randassignment, probi= intmessage_randprob, 
-         prior_interv_engag = interv_engagement) %>%
-  mutate(timeofday = ifelse(morning==1,0,1),
-         message_interaction_type = ifelse(message_type == "A",1,
-                                      ifelse(message_type=="B",2,
-                                             ifelse(message_type=="C",3,1))),
-         message_interaction_type = as.factor(message_interaction_type),
-         message_length = ifelse(is.na(message_length),"Not applicable",message_length),
-         # create time since under treatment (i.e., since study start) in weeks
-         wks_since_interv_start = case_when(day<=7 ~ 1,
-                                              (day>7) & (day<=14) ~ 2,
-                                              (day>14) & (day<=21) ~ 3,
-                                              (day>21) & (day<=30) ~ 4)
-         
-        ) %>%
-  group_by(id) %>%
-  mutate(# create prior sending of a message candidate moderator
-         prior_sent_message = lag(actioni)
-         ) %>%
-  ungroup() %>%
-  filter(!is.na(cov_prop_awakeuse_48hrs))
-
-        
 #print(paste0("Sample size: ",nrow(df)))
 
 r <- list()
@@ -415,6 +475,20 @@ fit4 <- wcls(
 r[[9]] <- summary(fit4)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 4")
 
+
+fit4b <- wcls(
+    data = df,
+    id = "id",
+    outcome = "prop_awakeuse",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~after_day15,
+    control_formula = ~after_day15 + cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+)
+
+r[[10]] <- summary(fit4b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 4.2")
+
 fit5 <- wcls(
     data = df,
     id = "id",
@@ -425,7 +499,7 @@ fit5 <- wcls(
     control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
 )
 
-r[[10]] <- summary(fit5)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+r[[11]] <- summary(fit5)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 5")
 
 df_temp <- df %>% filter(!is.na(prior_interv_engag)) 
@@ -439,7 +513,7 @@ fit6 <- wcls(
     control_formula = ~cov_prop_awakeuse_48hrs + prior_interv_engag  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
 )
 
-r[[11]] <- summary(fit6)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+r[[12]] <- summary(fit6)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 6")
 
 fit6b <- wcls(
@@ -452,7 +526,7 @@ fit6b <- wcls(
     control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
 )
 
-r[[12]] <- summary(fit6b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+r[[13]] <- summary(fit6b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 6.2")
 
 df_temp <- df %>% filter(!is.na(prior_sent_message)) 
@@ -466,7 +540,7 @@ fit7 <- wcls(
     control_formula = ~prior_sent_message + cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
 )
 
-r[[13]] <- summary(fit7)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+r[[14]] <- summary(fit7)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 7")
 
 df_temp <- df %>% filter(!is.na(prior_sent_messages_48hrs)) 
@@ -480,7 +554,7 @@ fit7b <- wcls(
     control_formula = ~prior_sent_messages_48hrs + cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
 )
 
-r[[14]] <- summary(fit7b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+r[[15]] <- summary(fit7b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 7.2")
 
 # short vs no message
@@ -499,7 +573,7 @@ fit8 <- wcls(
     control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
 )
 
-r[[15]] <- summary(fit8)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+r[[16]] <- summary(fit8)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 8")
 
 
@@ -519,7 +593,7 @@ fit8b <- wcls(
     control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
 )
 
-r[[16]] <- summary(fit8b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+r[[17]] <- summary(fit8b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 8.2")
 
 
@@ -529,11 +603,11 @@ fit9 <- wcls(
     outcome = "prop_awakeuse",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~sex,
-    control_formula = ~sex + cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    moderator_formula = ~male_sex,
+    control_formula = ~male_sex + cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
 )
 
-r[[17]] <- summary(fit9)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+r[[18]] <- summary(fit9)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 9")
 
 fit10 <- wcls(
@@ -546,7 +620,7 @@ fit10 <- wcls(
     control_formula = ~white_race + cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
 )
 
-r[[18]] <- summary(fit10)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+r[[19]] <- summary(fit10)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 10")
 
 
@@ -556,11 +630,11 @@ fit11 <- wcls(
     outcome = "prop_awakeuse",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~ethnicity,
-    control_formula = ~ethnicity + cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    moderator_formula = ~hispanic_ethn,
+    control_formula = ~hispanic_ethn + cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
 )
 
-r[[19]] <- summary(fit11)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+r[[20]] <- summary(fit11)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 11")
 
 fit12 <- wcls(
@@ -573,7 +647,7 @@ fit12 <- wcls(
     control_formula = ~ canndays_bl + cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
 )
 
-r[[20]] <- summary(fit12)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+r[[21]] <- summary(fit12)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 12")
 
 fit12b <- wcls(
@@ -586,7 +660,7 @@ fit12b <- wcls(
     control_formula = ~dsmsc_tot_bl + cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
 )
 
-r[[21]] <- summary(fit12b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+r[[22]] <- summary(fit12b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 12.2")
 
 fit13 <- wcls(
@@ -599,8 +673,47 @@ fit13 <- wcls(
     control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
 )
 
-r[[22]] <- summary(fit13)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+r[[23]] <- summary(fit13)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 13")
+
+fit13b <- wcls(
+    data = df,
+    id = "id",
+    outcome = "prop_awakeuse",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~high_cann_importance_bl,
+    control_formula = ~high_cann_importance_bl + cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+)
+
+r[[24]] <- summary(fit13b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 13.2")
+
+fit13c <- wcls(
+    data = df,
+    id = "id",
+    outcome = "prop_awakeuse",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~cann_likely_bl,
+    control_formula = ~cann_likely_bl + cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+)
+
+r[[25]] <- summary(fit13c)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 13.3")
+
+fit13d <- wcls(
+    data = df,
+    id = "id",
+    outcome = "prop_awakeuse",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~cann_conf_bl,
+    control_formula = ~cann_conf_bl + cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+)
+
+r[[26]] <- summary(fit13d)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 13.4")
 
 
 fit14 <- wcls(
@@ -613,7 +726,7 @@ fit14 <- wcls(
     control_formula = ~phq2_tot_bl + cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
 )
 
-r[[23]] <- summary(fit14)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+r[[27]] <- summary(fit14)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 14")
 
 
@@ -689,7 +802,7 @@ res_table(res)
   
 **Candidate Moderators**: We explore whether the effect of the intervention message on proximal intervention engagement differs by each of the candidate moderators listed below. 
   
-1. *timeofday*: time of day – binary (AM=1, PM=0),
+1. *timeofday*: time of day – binary (AM=0, PM=1),
   
 2. *prior_interv_engag*: prior intervention engagement – operationalized the same as the proximal outcome, at the prior decision point,
   
@@ -701,7 +814,7 @@ res_table(res)
   
 4. *wks_since_interv_start*: time since under treatment (i.e., since intervention start) in weeks,
   
-5. *week_day_binary1*: day of the week – binary (weekday=1, weekend [Fri-Sun]=0),
+5. *week_day_binary*: day of the week – binary (weekday=1, weekend [Fri-Sun]=0),
   
 6. *prior_sent_message*: prior delivery of a message – binary (yes message=1, no message=0), at the prior decision point,
   
@@ -719,11 +832,11 @@ res_table(res)
   
 9. *cov_humtch_binary_48hrs*: prior human-touch engagement – binary (1=yes, 0=no) for any email, text, or phone call made by study staff (after 72 hours, 120 hours, and 168 hours [1 week])  over past 4 decision points (i.e., approximately 48 hours),
    
-10. *sex*: baseline demographic of biological sex (female=1,male=0),  
+10. *male_sex*: baseline demographic of male biological sex (0=female,1=male),  
   
-11. *race*: baseline demographic of race (white=1, 0=non-white),   
+11. *white_race*: baseline demographic of white race (0=not white, 1=white),   
   
-12. *ethnicity*: baseline demographic of ethnicity (1=not hispanic or latino, 0=hispanic or latino),
+12. *hispanic_ethn*: baseline demographic of hispanic or latino ethnicity (0=not hispanic or latino, 1=hispanic or latino),
   
 13. *canndays_bl*: baseline cannabis use severity that is the number of days used cannabis in past month (range: 0-31), which reflects cannabis use frequency, 
   
@@ -750,32 +863,8 @@ library(ggplot2)
 library(kableExtra)
 library(MRTAnalysis)
 library(gt)
-
-df <- prim_dat %>%
-  arrange(id,decision_point) %>%
-  rename(actioni=intmessage_randassignment, probi= intmessage_randprob, 
-         prior_interv_engag = interv_engagement) %>%
-  mutate(timeofday = ifelse(morning==1,0,1),
-         message_interaction_type = ifelse(message_type == "A",1,
-                                      ifelse(message_type=="B",2,
-                                             ifelse(message_type=="C",3,1))),
-         message_interaction_type = as.factor(message_interaction_type),
-         message_length = ifelse(is.na(message_length),"Not applicable",message_length),
-         # create time since under treatment (i.e., since study start) in weeks
-         wks_since_interv_start = case_when(day<=7 ~ 1,
-                                              (day>7) & (day<=14) ~ 2,
-                                              (day>14) & (day<=21) ~ 3,
-                                              (day>21) & (day<=30) ~ 4)
-         
-        ) %>%
-  group_by(id) %>%
-  mutate(# create prior sending of a message candidate moderator
-         prior_sent_message = lag(actioni)
-         ) %>%
-  ungroup()
-  #filter(!is.na(cov_prop_awakeuse_48hrs))
-
         
+# run with same sample size as for proximal cannabis 
 #print(paste0("Sample size: ",nrow(df)))
 
 r <- list()
@@ -805,6 +894,840 @@ fit_wcov <- wcls(
 
 r[[2]] <- summary(fit_wcov)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Main Effect Model (with covars)")
+
+
+fit1 <- wcls(
+    data = df,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~timeofday,
+    control_formula = ~ timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[3]] <- summary(fit1)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 1")
+
+
+df_temp <- df %>% filter(!is.na(prior_interv_engag)) 
+fit2 <- wcls(
+    data = df_temp,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~prior_interv_engag,
+    control_formula = ~timeofday + week_day_binary + prior_interv_engag + cov_humtch_binary_48hrs
+)
+
+r[[4]] <- summary(fit2)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 2")
+
+fit2b <- wcls(
+    data = df,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~cov_interv_engag_72hrs,
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[5]] <- summary(fit2b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 2.2")
+
+df_temp <- df %>% filter(!is.na(prop_awakeuse_prior)) 
+fit3 <- wcls(
+    data = df_temp,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~prop_awakeuse_prior,
+    control_formula = ~prop_awakeuse_prior + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[6]] <- summary(fit3)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 3")
+
+
+fit3b <- wcls(
+    data = df,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~cov_prop_awakeuse_48hrs,
+    control_formula = ~cov_prop_awakeuse_48hrs + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[7]] <- summary(fit3b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 3.2")
+
+
+fit4 <- wcls(
+    data = df,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~wks_since_interv_start,
+    control_formula = ~wks_since_interv_start + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[8]] <- summary(fit4)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 4")
+
+fit5 <- wcls(
+    data = df,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~week_day_binary,
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[9]] <- summary(fit5)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 5")
+
+df_temp <- df %>% filter(!is.na(prior_sent_message)) 
+fit6 <- wcls(
+    data = df_temp,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~prior_sent_message,
+    control_formula = ~prior_sent_message + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[10]] <- summary(fit7)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 6")
+
+df_temp <- df %>% filter(!is.na(prior_sent_messages_48hrs)) 
+fit6b <- wcls(
+    data = df_temp,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~prior_sent_messages_48hrs,
+    control_formula = ~prior_sent_messages_48hrs + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[11]] <- summary(fit6b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 6.2")
+
+
+# type of interaction (A, B or C) – categorical (A=0, B=1, C=2)
+df_temp <- df %>% 
+  # restrict to interaction A type message and no message
+  filter(!(message_type %in% c("B","C"))) %>%
+  mutate(interact_A_message = ifelse(actioni==0,0,1))
+fit7 <- wcls(
+    data = df_temp,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "interact_A_message",
+    rand_prob = "probi",
+    moderator_formula = ~1,
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[12]] <- summary(fit7)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 7")
+
+# type of interaction (A, B or C) – categorical (A=0, B=1, C=2)
+df_temp <- df %>% 
+  # restrict to interaction B type message and no message
+  filter(!(message_type %in% c("A","C"))) %>%
+  mutate(interact_B_message = ifelse(actioni==0,0,1))
+
+fit7b <- wcls(
+    data = df_temp,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "interact_B_message",
+    rand_prob = "probi",
+    moderator_formula = ~1,
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[13]] <- summary(fit7b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 7.2")
+
+
+# type of interaction (A, B or C) – categorical (A=0, B=1, C=2)
+df_temp <- df %>% 
+  # restrict to interaction C type message and no message
+  filter(!(message_type %in% c("A","B"))) %>%
+  mutate(interact_C_message = ifelse(actioni==0,0,1))
+
+fit7c <- wcls(
+    data = df_temp,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "interact_C_message",
+    rand_prob = "probi",
+    moderator_formula = ~1,
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[14]] <- summary(fit7c)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 7.3")
+
+# short vs no message
+df_temp <- df %>%
+  # restrict to short message and no message
+  filter(message_length!="Long") %>%
+  mutate(short_message = ifelse(actioni==0,0,1))
+
+fit8 <- wcls(
+    data = df_temp,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "short_message",
+    rand_prob = "probi",
+    moderator_formula = ~1,
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[15]] <- summary(fit8)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 8")
+
+
+# # long vs no message
+df_temp <- df %>%
+  # restrict to long message and no message
+  filter(message_length!="Short") %>%
+  mutate(long_message = ifelse(actioni==0,0,1))
+
+fit8b <- wcls(
+    data = df_temp,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "long_message",
+    rand_prob = "probi",
+    moderator_formula = ~1,
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[16]] <- summary(fit8b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 8.2")
+
+fit9 <- wcls(
+    data = df,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~cov_humtch_binary_48hrs,
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[17]] <- summary(fit9)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 9")
+
+fit10 <- wcls(
+    data = df,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~male_sex,
+    control_formula = ~male_sex + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[18]] <- summary(fit10)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 10")
+
+fit11 <- wcls(
+    data = df,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~white_race,
+    control_formula = ~white_race + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[19]] <- summary(fit11)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 11")
+
+
+fit12 <- wcls(
+    data = df,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~hispanic_ethn,
+    control_formula = ~hispanic_ethn + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[20]] <- summary(fit12)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 12")
+
+fit13 <- wcls(
+    data = df,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~canndays_bl,
+    control_formula = ~ canndays_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[21]] <- summary(fit13)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 13")
+
+fit13b <- wcls(
+    data = df,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~dsmsc_tot_bl,
+    control_formula = ~dsmsc_tot_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[22]] <- summary(fit13b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 13.2")
+
+fit14 <- wcls(
+    data = df,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~cann_importance_bl,
+    control_formula = ~cann_importance_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[23]] <- summary(fit14)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 14")
+
+fit14b <- wcls(
+    data = df,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~high_cann_importance_bl,
+    control_formula = ~high_cann_importance_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[24]] <- summary(fit14b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 14.2")
+
+fit14c <- wcls(
+    data = df,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~cann_likely_bl,
+    control_formula = ~cann_likely_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[25]] <- summary(fit14c)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 14.3")
+
+fit14d <- wcls(
+    data = df,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~cann_conf_bl,
+    control_formula = ~cann_conf_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[26]] <- summary(fit14d)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 14.4")
+
+
+fit15 <- wcls(
+    data = df,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~phq2_tot_bl,
+    control_formula = ~phq2_tot_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[27]] <- summary(fit15)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 15")
+
+res <- r %>% 
+  map_df(bind_rows) %>% 
+  select(model, everything()) %>%
+  dplyr::mutate(model_num = gsub("Moderation Effect Model ","",model),
+         model_num = ifelse(model=="Main Effect Model (no covars)","0",
+                            ifelse(model=="Main Effect Model (with covars)","0.5",model_num)),
+         model_num = as.numeric(model_num)
+  )%>%
+  dplyr::arrange(model_num) 
+
+# create table with output
+res_table <- function(res){
+    res %>%
+      mutate(term = str_replace(term, "\\(Intercept\\)", "Intercept")) %>%
+      rename(Term = term)%>%
+      select(-c(model,model_num)) %>%
+      kableExtra::kbl(booktabs = TRUE, 
+                      longtable = TRUE,
+                      digits=3,
+                      format = "latex",
+                      caption = NULL) %>%
+      kableExtra::kable_styling(
+        latex_options = c("striped", "hold_position", "repeat_header"),
+        font_size = 10
+        #full_width = TRUE
+      ) %>%
+      kableExtra::pack_rows(index = table(fct_inorder(res$model))) %>%
+      kableExtra::column_spec(1, width = "4.7cm") %>%
+      kableExtra::column_spec(7, width = "1cm") %>%
+      kableExtra::column_spec(8, width = "1cm") %>%
+      kableExtra::footnote(
+        general = "prior intervention engagement, and prior human-touch engagement.",
+        general_title = "", footnote_as_chunk = T
+      )%>%
+      kableExtra::footnote(
+        general = "Model with covariates adjusts for the following: time of day, day of week,", general_title = "", footnote_as_chunk = T
+      ) %>%
+      kableExtra::footnote(
+        general = "Notes: Standard errors are not yet adjusted to account for RL uncertainty.", general_title = "", footnote_as_chunk = T
+      ) 
+}
+
+res_table(res)
+```
+
+\newpage
+
+Next, we examine the results for proximal intervention enagement when not restricting the sample to decision points with a completed EMA.
+
+```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE}
+library(tidyverse)
+library(dplyr)
+library(lubridate)
+library(knitr)
+library(ggplot2)
+library(kableExtra)
+library(MRTAnalysis)
+library(gt)
+
+# run with sample size that reflects only missingness in proximal intervention engagement
+df_engag <- full_dat %>%
+  # restrict to participants with at least 3 completed EMAs
+  dplyr::filter(num_emas_l >= 3) %>%
+  # remove observations where the randomization information is missing
+  dplyr::filter(missing_rand != 1) %>%
+  dplyr::filter(!is.na(interv_engagement_l))
+
+#print(paste0("Common Sample Size: ",nrow(df)))
+#print(paste0("Engagement Sample Size: ",nrow(df_engag)))
+
+
+r <- list()
+
+fit_wocov_b <- wcls(
+    data = df_engag,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~1,
+    control_formula = ~1
+)
+
+
+r[[1]] <- summary(fit_wocov_b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Main Effect Model (no covars)")
+
+fit_wcov_b <- wcls(
+    data = df_engag,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~1,
+    control_formula = ~ timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[2]] <- summary(fit_wcov_b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Main Effect Model (with covars)")
+
+
+fit1 <- wcls(
+    data = df_engag,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~timeofday,
+    control_formula = ~ timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[3]] <- summary(fit1)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 1")
+
+
+df_engag_temp <- df_engag %>% filter(!is.na(prior_interv_engag)) 
+fit2 <- wcls(
+    data = df_engag_temp,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~prior_interv_engag,
+    control_formula = ~timeofday + week_day_binary + prior_interv_engag + cov_humtch_binary_48hrs
+)
+
+r[[4]] <- summary(fit2)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 2")
+
+fit2b <- wcls(
+    data = df_engag,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~cov_interv_engag_72hrs,
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[5]] <- summary(fit2b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 2.2")
+
+df_engag_temp <- df_engag %>% filter(!is.na(prop_awakeuse_prior))
+fit3 <- wcls(
+    data = df_engag_temp,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~prop_awakeuse_prior,
+    control_formula = ~prop_awakeuse_prior + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[6]] <- summary(fit3)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 3")
+
+df_engag_temp <- df_engag %>% filter(!is.na(cov_prop_awakeuse_48hrs))
+fit3b <- wcls(
+    data = df_engag_temp,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~cov_prop_awakeuse_48hrs,
+    control_formula = ~cov_prop_awakeuse_48hrs + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[7]] <- summary(fit3b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 3.2")
+
+
+fit4 <- wcls(
+    data = df_engag,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~wks_since_interv_start,
+    control_formula = ~wks_since_interv_start + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[8]] <- summary(fit4)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 4")
+
+fit5 <- wcls(
+    data = df_engag,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~week_day_binary,
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[9]] <- summary(fit5)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 5")
+
+df_engag_temp <- df_engag %>% filter(!is.na(prior_sent_message))
+fit6 <- wcls(
+    data = df_engag_temp,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~prior_sent_message,
+    control_formula = ~prior_sent_message + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[10]] <- summary(fit7)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 6")
+
+df_engag_temp <- df_engag %>% filter(!is.na(prior_sent_messages_48hrs))
+fit6b <- wcls(
+    data = df_engag_temp,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~prior_sent_messages_48hrs,
+    control_formula = ~prior_sent_messages_48hrs + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[11]] <- summary(fit6b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 6.2")
+
+
+# type of interaction (A, B or C) – categorical (A=0, B=1, C=2)
+df_engag_temp <- df_engag %>%
+  # restrict to interaction A type message and no message
+  filter(!(message_type %in% c("B","C"))) %>%
+  mutate(interact_A_message = ifelse(actioni==0,0,1))
+fit7 <- wcls(
+    data = df_engag_temp,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "interact_A_message",
+    rand_prob = "probi",
+    moderator_formula = ~1,
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[12]] <- summary(fit7)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 7")
+
+# type of interaction (A, B or C) – categorical (A=0, B=1, C=2)
+df_engag_temp <- df_engag %>%
+  # restrict to interaction B type message and no message
+  filter(!(message_type %in% c("A","C"))) %>%
+  mutate(interact_B_message = ifelse(actioni==0,0,1))
+
+fit7b <- wcls(
+    data = df_engag_temp,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "interact_B_message",
+    rand_prob = "probi",
+    moderator_formula = ~1,
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[13]] <- summary(fit7b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 7.2")
+
+
+# type of interaction (A, B or C) – categorical (A=0, B=1, C=2)
+df_engag_temp <- df_engag %>%
+  # restrict to interaction C type message and no message
+  filter(!(message_type %in% c("A","B"))) %>%
+  mutate(interact_C_message = ifelse(actioni==0,0,1))
+
+fit7c <- wcls(
+    data = df_engag_temp,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "interact_C_message",
+    rand_prob = "probi",
+    moderator_formula = ~1,
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[14]] <- summary(fit7c)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 7.3")
+
+# short vs no message
+df_engag_temp <- df_engag %>%
+  # restrict to short message and no message
+  filter(message_length!="Long") %>%
+  mutate(short_message = ifelse(actioni==0,0,1))
+
+fit8 <- wcls(
+    data = df_engag_temp,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "short_message",
+    rand_prob = "probi",
+    moderator_formula = ~1,
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[15]] <- summary(fit8)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 8")
+
+
+# # long vs no message
+df_engag_temp <- df_engag %>%
+  # restrict to long message and no message
+  filter(message_length!="Short") %>%
+  mutate(long_message = ifelse(actioni==0,0,1))
+
+fit8b <- wcls(
+    data = df_engag_temp,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "long_message",
+    rand_prob = "probi",
+    moderator_formula = ~1,
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[16]] <- summary(fit8b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 8.2")
+
+fit9 <- wcls(
+    data = df_engag,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~cov_humtch_binary_48hrs,
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[17]] <- summary(fit9)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 9")
+
+fit10 <- wcls(
+    data = df_engag,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~male_sex,
+    control_formula = ~male_sex + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[18]] <- summary(fit10)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 10")
+
+fit11 <- wcls(
+    data = df_engag,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~white_race,
+    control_formula = ~white_race + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[19]] <- summary(fit11)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 11")
+
+
+fit12 <- wcls(
+    data = df_engag,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~hispanic_ethn,
+    control_formula = ~hispanic_ethn + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[20]] <- summary(fit12)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 12")
+
+fit13 <- wcls(
+    data = df_engag,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~canndays_bl,
+    control_formula = ~ canndays_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[21]] <- summary(fit13)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 13")
+
+fit13b <- wcls(
+    data = df_engag,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~dsmsc_tot_bl,
+    control_formula = ~dsmsc_tot_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[22]] <- summary(fit13b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 13.2")
+
+fit14 <- wcls(
+    data = df_engag,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~cann_importance_bl,
+    control_formula = ~cann_importance_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[23]] <- summary(fit14)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 14")
+
+fit14b <- wcls(
+    data = df_engag,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~high_cann_importance_bl,
+    control_formula = ~high_cann_importance_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[24]] <- summary(fit14b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 14.2")
+
+fit14c <- wcls(
+    data = df_engag,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~cann_likely_bl,
+    control_formula = ~cann_likely_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[25]] <- summary(fit14c)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 14.3")
+
+fit14d <- wcls(
+    data = df_engag,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~cann_conf_bl,
+    control_formula = ~cann_conf_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[26]] <- summary(fit14d)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 14.4")
+
+
+fit15 <- wcls(
+    data = df_engag,
+    id = "id",
+    outcome = "interv_engagement_l",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~phq2_tot_bl,
+    control_formula = ~phq2_tot_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+)
+
+r[[27]] <- summary(fit15)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 15")
 
 res <- r %>% 
   map_df(bind_rows) %>% 
