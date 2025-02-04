@@ -89,7 +89,11 @@ full_dat <- prim_dat %>%
         ) %>%
   dplyr::group_by(id) %>%
   dplyr::mutate(# create prior sending of a message candidate moderator
-         prior_sent_message = lag(actioni)
+         prior_sent_message = lag(actioni),
+         log_awakeuse_offs = prop_awakeuse + 0.001,
+         log_awakeuse = log(log_awakeuse_offs),
+         logit_awakeuse = log((log_awakeuse_offs)/(1-(log_awakeuse_offs)))
+         
          ) %>%
   dplyr::ungroup() 
 
@@ -242,6 +246,44 @@ print(p3)
 ```
 
 \newpage
+ 
+## Overall Distribution of Proximal Outcome 
+```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE}
+library(ggplot2)
+
+h1 <- ggplot(data=df,aes(x=prop_awakeuse)) +
+  geom_histogram(alpha=.5) + 
+  theme_bw() +
+  scale_x_continuous(expand = c(0,0.01)) +
+  theme(text = element_text(family = "Helvetica",size = 10)) + 
+  ggtitle("") + labs(x = "Proportion of Hours with Cannabis Use", y = "Count of Decision Points")
+
+h2 <- ggplot(data=df,aes(x=log_awakeuse)) +
+  geom_histogram(alpha=.5) + 
+  theme_bw() +
+  #scale_x_continuous(expand = c(0,0.01)) +
+  theme(text = element_text(family = "Helvetica",size = 10)) + 
+  ggtitle("") + labs(x = "log(p)", y = "Count of Decision Points")
+
+h3 <- ggplot(data=df,aes(x=logit_awakeuse)) +
+  geom_histogram(alpha=.5) + 
+  theme_bw() +
+  #scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+  #scale_x_continuous(breaks = seq(1,27,5),
+  #                   limits = c(1,27)) +
+  #scale_x_continuous(expand = c(0,0.01)) +
+  theme(text = element_text(family = "Helvetica",size = 10)) +
+        #axis.text.x = element_text(angle = 320)) + 
+  ggtitle("") + labs(x = "log(p/(1-p))", y = "Count of Decision Points")
+
+cowplot::plot_grid( 
+  h1,
+  h2,
+  h3
+)
+
+```
+\newpage
   
 ## *Preliminary* Causal Excursion Effect Estimates
   
@@ -266,8 +308,9 @@ print(p3)
 -  baseline cannabis use – self-reported average hours of cannabis use in prior day (range: 0-24), during the past month, and 
   
 -  baseline time to cannabis use - self-reported time to cannabis use, since awaking (1=Within 5 minutes, 2=6-30 minutes, 3=31 minutes to almost 1 hour, 4=1 to almost 2 hours, 5=2 to almost 4 hours, 6=4 or more hours), during the past month.  
+**Research Question 2**: Explore whether the effect of the intervention message on proximal cannabis use varies by each of the candidate moderators listed below.  
   
-**Candidate Moderators**: We explore whether the effect of the intervention message on proximal cannabis use varies by each of the candidate moderators listed below. 
+**Candidate Moderators**:   
   
 1. *timeofday*: time of day – binary (AM=0, PM=1),
   
@@ -319,7 +362,8 @@ print(p3)
   
 14. *phq2_tot_bl*: baseline mental health, which is the sum across two item scale PHQ-2 ("Over the last two weeks, how often have you been bothered by any of the following problems? Little interest or pleasure in doing things" and "Over the last two weeks, how often have you been bothered by any of the following problems? Feeling down, depressed, or hopeless" with response values of 0=Not at all, 1= Several days, 2=More than half the days, and 3=Nearly every day).
 
-[a] Note: This candidate moderator was included after the list of moderators was formalized.
+Notes: All continuous candidate moderators are mean-centered.  
+[a] This candidate moderator was included after the list of moderators was formalized.
 
 \newpage
 ```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE}
@@ -333,6 +377,21 @@ library(MRTAnalysis)
 library(gt)
 
 #print(paste0("Sample size: ",nrow(df)))
+
+# center by grand mean
+# specify list of continuous covariates that intend to mean center
+vars.standardize <- c("prop_awakeuse_prior","cov_prop_awakeuse_48hrs",
+                      "prior_interv_engag","cov_interv_engag_72hrs","prior_sent_messages_48hrs",
+                      "canndays_bl","dsmsc_tot_bl",
+                      "cann_importance_bl","cann_likely_bl","cann_conf_bl",
+                      "phq2_tot_bl","cannwake_bl")
+
+cntr_fnc <- function(var){
+  var - mean(var,na.rm=T)
+}
+
+df <- df %>%
+  dplyr::mutate(across(all_of(vars.standardize),cntr_fnc,.names = "{col}"))
 
 r <- list()
 
@@ -673,7 +732,7 @@ fit13 <- wcls(
     control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
 )
 
-r[[23]] <- summary(fit13)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+r[[23]] <- summary(fit13,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 13")
 
 fit13b <- wcls(
@@ -757,9 +816,9 @@ res_table <- function(res){
         #full_width = TRUE
       ) %>%
       kableExtra::pack_rows(index = table(fct_inorder(res$model))) %>%
-      kableExtra::column_spec(1, width = "4.7cm") %>%
-      kableExtra::column_spec(7, width = "1cm") %>%
-      kableExtra::column_spec(8, width = "1cm") %>%
+      kableExtra::column_spec(1, width = "6cm") %>%
+      kableExtra::column_spec(7, width = "0.5cm") %>%
+      kableExtra::column_spec(8, width = "0.5cm") %>%
       kableExtra::footnote(
         general = "baseline cannabis use, and baseline time to cannabis use.", general_title = "", footnote_as_chunk = T
       ) %>%
@@ -784,12 +843,12 @@ res_table(res)
     
 ## *Preliminary* Causal Excursion Effect Estimates
   
-**Research Question 1**: Investigate whether, on average, there is a proximal effect of delivering an intervention message on proximal intervention engagement.   
+**Research Question 3**: Investigate whether, on average, there is a proximal effect of delivering an intervention message on proximal intervention engagement.   
   
 **Proximal outcome ($Y_{i,t+1}$)**: Intervention engagement (discrete: 0-3, treated as continuous)  
     
 **Treatment indicator ($A_{i,t}$)**: Binary (1=Yes message, 0=No message)  
-  
+
 **Covariates**:  
   
 -  time of day – binary (AM=0, PM=1),  
@@ -799,8 +858,10 @@ res_table(res)
 -  prior intervention engagement – score that ranges from 0-3 averaged over past 6 decision points (i.e., approximately 72 hours), 
   
 -  prior human-touch engagement – binary (1=yes, 0=no) for any email, text, or phone call made by study staff (after 72 hours, 120 hours, and 168 hours [1 week])  over past 4 decision points (i.e., approximately 48 hours).  
+
+**Research Question 4**: Explore whether the effect of the intervention message on proximal intervention engagement differs by each of the candidate moderators listed below.  
   
-**Candidate Moderators**: We explore whether the effect of the intervention message on proximal intervention engagement differs by each of the candidate moderators listed below. 
+**Candidate Moderators**: 
   
 1. *timeofday*: time of day – binary (AM=0, PM=1),
   
@@ -852,7 +913,8 @@ res_table(res)
   
 15. *phq2_tot_bl*: baseline mental health, which is the sum across two item scale PHQ-2 ("Over the last two weeks, how often have you been bothered by any of the following problems? Little interest or pleasure in doing things" and "Over the last two weeks, how often have you been bothered by any of the following problems? Feeling down, depressed, or hopeless" with response values of 0=Not at all, 1= Several days, 2=More than half the days, and 3=Nearly every day).
 
-[a] Note: This candidate moderator was included after the list of moderators was formalized.
+Notes: All continuous candidate moderators are mean-centered.  
+[a] This candidate moderator was included after the list of moderators was formalized.
 
 ```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE}
 library(tidyverse)
@@ -1232,7 +1294,7 @@ fit14c <- wcls(
     control_formula = ~cann_likely_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
 )
 
-r[[25]] <- summary(fit14c)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+r[[25]] <- summary(fit14c,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 14.3")
 
 fit14d <- wcls(
@@ -1245,7 +1307,7 @@ fit14d <- wcls(
     control_formula = ~cann_conf_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
 )
 
-r[[26]] <- summary(fit14d)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+r[[26]] <- summary(fit14d, lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 14.4")
 
 
@@ -1289,9 +1351,9 @@ res_table <- function(res){
         #full_width = TRUE
       ) %>%
       kableExtra::pack_rows(index = table(fct_inorder(res$model))) %>%
-      kableExtra::column_spec(1, width = "4.7cm") %>%
-      kableExtra::column_spec(7, width = "1cm") %>%
-      kableExtra::column_spec(8, width = "1cm") %>%
+      kableExtra::column_spec(1, width = "6cm") %>%
+      kableExtra::column_spec(7, width = "0.5cm") %>%
+      kableExtra::column_spec(8, width = "0.5cm") %>%
       kableExtra::footnote(
         general = "prior intervention engagement, and prior human-touch engagement.",
         general_title = "", footnote_as_chunk = T
@@ -1660,7 +1722,7 @@ fit13b <- wcls(
     control_formula = ~dsmsc_tot_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
 )
 
-r[[22]] <- summary(fit13b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+r[[22]] <- summary(fit13b,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 13.2")
 
 fit14 <- wcls(
@@ -1699,7 +1761,7 @@ fit14c <- wcls(
     control_formula = ~cann_likely_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
 )
 
-r[[25]] <- summary(fit14c)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+r[[25]] <- summary(fit14c,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 14.3")
 
 fit14d <- wcls(
@@ -1712,7 +1774,7 @@ fit14d <- wcls(
     control_formula = ~cann_conf_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
 )
 
-r[[26]] <- summary(fit14d)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+r[[26]] <- summary(fit14d,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 14.4")
 
 
@@ -1726,7 +1788,7 @@ fit15 <- wcls(
     control_formula = ~phq2_tot_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
 )
 
-r[[27]] <- summary(fit15)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+r[[27]] <- summary(fit15,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 15")
 
 res <- r %>% 
@@ -1756,9 +1818,9 @@ res_table <- function(res){
         #full_width = TRUE
       ) %>%
       kableExtra::pack_rows(index = table(fct_inorder(res$model))) %>%
-      kableExtra::column_spec(1, width = "4.7cm") %>%
-      kableExtra::column_spec(7, width = "1cm") %>%
-      kableExtra::column_spec(8, width = "1cm") %>%
+      kableExtra::column_spec(1, width = "6cm") %>%
+      kableExtra::column_spec(7, width = "0.5cm") %>%
+      kableExtra::column_spec(8, width = "0.5cm") %>%
       kableExtra::footnote(
         general = "prior intervention engagement, and prior human-touch engagement.",
         general_title = "", footnote_as_chunk = T
@@ -1773,3 +1835,24 @@ res_table <- function(res){
 
 res_table(res)
 ```
+\newpage
+
+# 3. Draft Interpretation of Results
+
+Below we include interpretations of the results from the four research questions (RQ1-RQ4), as outlined above.  
+\vspace{5pt}
+  
+For **RQ1**, the average proximal effect of prompting (vs. not prompting) with a message on proximal cannabis use (proportion of waking hours using cannabis 0-1, treated as continuous) was not significantly different from the null of zero (b=0.009; 95% CI: -0.003, 0.020; p-value=0.134). Herein, we adjust for the following covariates for noise reduction: time of day, day of week, prior cannabis use, prior intervention engagement, baseline motivation to change, baseline cannabis use, and baseline time to cannabis use.
+\vspace{5pt}
+  
+For **RQ2** with respect to proximal cannabis use, only the interaction between prompting with a message and baseline motivation to change (scale: 0 (not at all)-10 (very) and centered at grand mean) was significantly different from zero (b=-0.005; 95% CI: -0.010, -0.001; p-value=0.030).   
+  
+- This indicates that prompting with an intervention message is less adverse for proximal cannabis use, with a 1 unit increase in importance to cut back cannabis use, as self-reported at time of baseline survey, from the mean. For participants with a 1 unit increase in baseline cannabis motivation to change from the mean, prompting with an intervention message increases proximal cannabis use by 0.003, as compared to a 0.009 increase in the same for participants with mean motivation to change. However, we caution against resolute interpretation of this effect, considering the remainder of the tests for RQ2 demonstrated null results. 
+\vspace{5pt} 
+  
+For **RQ3** - **RQ4**, we report the results for the second version without restricting the analysis dataset to EMA completions. This is because EMA completion was a component of the construction of the intervention engagement proximal outcome. For **RQ3**, we similarly find that the effect of prompting (vs. not prompting) with a message on proximal intervention engagement (scale: 0-3, treated as continuous) was not significantly different from the null of zero (b=-0.030; 95% CI: -0.075, 0.015; p-value=0.190). The following precision covariates are included: time of day, day of week, prior intervention engagement, and prior human-touch engagement.  
+\vspace{5pt}
+  
+For **RQ4** with respect to proximal intervention engagement, the following candidate moderators bore a significant difference on the effect of a message on engagement: baseline cannabis use severity (count of symptoms endorsed and ranges from 0-11), baseline likelihood to cut back on cannabis use (0 [not at all]-10 [very]), baseline confidence in cutting back on cannabis use (0 [not at all]-10 [very]), and baseline mental health (sum of two item scale and ranges from 0-6).
+  
+  
