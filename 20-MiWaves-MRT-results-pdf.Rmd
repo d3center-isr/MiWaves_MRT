@@ -246,7 +246,38 @@ print(p3)
 ```
 
 \newpage
- 
+## Trajectory of Cannabis Use Over Time
+```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE}
+library(ggplot2)
+t1 <- df %>% 
+  # left_join(means1, by="id") %>% 
+  # mutate(Action = factor(intmessage_randassignment,levels=c(0,1),labels=c("No Message","Yes Message"))
+  #        #,canuse = prop_awakeuse - mean_canuse
+  #        ) %>% 
+  # filter(!is.na(Action)) %>% 
+  group_by(day) %>% 
+  summarise(mcanuse=mean(prop_awakeuse, na.rm = TRUE)) %>%
+  ggplot(aes(day, mcanuse)) +
+  geom_hline(yintercept = 0, color="gray") +
+  geom_point(size=2, color = "navy", fill="navy") +
+  #scale_color_manual(values = colors) +
+  #scale_fill_manual(values = colors) +
+  geom_smooth(method = loess, se = FALSE, alpha=0.25,linewidth=1.2,color = "blue", fill="blue") +
+  scale_x_continuous(breaks = c(1,5,10,15,20,25,30),expand = c(0,0.1),limits=c(1,30)) +
+  theme_bw()+
+  coord_cartesian(ylim=c(0,0.5)) +
+  theme(text=element_text(family = "Helvetica",size = 10)
+        #legend.position = "bottom",
+        #legend.title=element_blank(), 
+        ) +
+  labs(x = "Day in Study",
+       y = "Mean Proportion of Waking Hours Using Cannabis") 
+
+print(t1)
+
+```
+
+\newpage
 ## Overall Distribution of Proximal Outcome 
 ```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE}
 library(ggplot2)
@@ -261,19 +292,13 @@ h1 <- ggplot(data=df,aes(x=prop_awakeuse)) +
 h2 <- ggplot(data=df,aes(x=log_awakeuse)) +
   geom_histogram(alpha=.5) + 
   theme_bw() +
-  #scale_x_continuous(expand = c(0,0.01)) +
   theme(text = element_text(family = "Helvetica",size = 10)) + 
   ggtitle("") + labs(x = "log(p)", y = "Count of Decision Points")
 
 h3 <- ggplot(data=df,aes(x=logit_awakeuse)) +
   geom_histogram(alpha=.5) + 
   theme_bw() +
-  #scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
-  #scale_x_continuous(breaks = seq(1,27,5),
-  #                   limits = c(1,27)) +
-  #scale_x_continuous(expand = c(0,0.01)) +
   theme(text = element_text(family = "Helvetica",size = 10)) +
-        #axis.text.x = element_text(angle = 320)) + 
   ggtitle("") + labs(x = "log(p/(1-p))", y = "Count of Decision Points")
 
 cowplot::plot_grid( 
@@ -1835,24 +1860,9 @@ res_table <- function(res){
 
 res_table(res)
 ```
-\newpage
 
-# 3. Draft Interpretation of Results
 
-Below we include interpretations of the results from the four research questions (RQ1-RQ4), as outlined above.  
-\vspace{5pt}
-  
-For **RQ1**, the average proximal effect of prompting (vs. not prompting) with a message on proximal cannabis use (proportion of waking hours using cannabis 0-1, treated as continuous) was not significantly different from the null of zero (b=0.009; 95% CI: -0.003, 0.020; p-value=0.134). Herein, we adjust for the following covariates for noise reduction: time of day, day of week, prior cannabis use, prior intervention engagement, baseline motivation to change, baseline cannabis use, and baseline time to cannabis use.
-\vspace{5pt}
-  
-For **RQ2** with respect to proximal cannabis use, only the interaction between prompting with a message and baseline motivation to change (scale: 0 (not at all)-10 (very) and centered at grand mean) was significantly different from zero (b=-0.005; 95% CI: -0.010, -0.001; p-value=0.030).   
-  
-- This indicates that prompting with an intervention message is less adverse for proximal cannabis use, with a 1 unit increase in importance to cut back cannabis use, as self-reported at time of baseline survey, from the mean. For participants with a 1 unit increase in baseline cannabis motivation to change from the mean, prompting with an intervention message increases proximal cannabis use by 0.003, as compared to a 0.009 increase in the same for participants with mean motivation to change. However, we caution against resolute interpretation of this effect, considering the remainder of the tests for RQ2 demonstrated null results. 
-\vspace{5pt} 
-  
-For **RQ3** - **RQ4**, we report the results for the second version without restricting the analysis dataset to EMA completions. This is because EMA completion was a component of the construction of the intervention engagement proximal outcome. For **RQ3**, we similarly find that the effect of prompting (vs. not prompting) with a message on proximal intervention engagement (scale: 0-3, treated as continuous) was not significantly different from the null of zero (b=-0.030; 95% CI: -0.075, 0.015; p-value=0.190). The following precision covariates are included: time of day, day of week, prior intervention engagement, and prior human-touch engagement.  
-\vspace{5pt}
-  
-For **RQ4** with respect to proximal intervention engagement, the following candidate moderators bore a significant difference on the effect of a message on engagement: baseline cannabis use severity (count of symptoms endorsed and ranges from 0-11), baseline likelihood to cut back on cannabis use (0 [not at all]-10 [very]), baseline confidence in cutting back on cannabis use (0 [not at all]-10 [very]), and baseline mental health (sum of two item scale and ranges from 0-6).
+
+
   
   
