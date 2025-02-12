@@ -105,6 +105,12 @@ df <- full_dat %>%
   dplyr::filter(!is.na(prop_awakeuse))%>%
   dplyr::filter(!is.na(cov_prop_awakeuse_48hrs))
   
+mean_motivation <- df %>%
+  dplyr::mutate(grand_mean = mean(cann_importance_bl,na.rm=T))%>%
+  dplyr::select(id,cann_importance_bl, grand_mean) %>%
+  dplyr::distinct(id,cann_importance_bl, grand_mean)%>%
+  dplyr::mutate(pt_mean = mean(cann_importance_bl,na.rm=T)) %>%
+  dplyr::select(pt_mean,grand_mean) %>% distinct(pt_mean,grand_mean)
 
 cann_importance_bl_freq <- df %>%
   select(id,cann_importance_bl)%>%
@@ -275,6 +281,42 @@ t1 <- df %>%
 
 print(t1)
 
+
+colors <- c("#dc0000ff","#00a087ff")
+means1 <- df %>%
+  group_by(id) %>%
+  summarise(mean_canuse = mean(prop_awakeuse,na.rm=T))%>%
+  ungroup()
+
+t2 <- df %>% 
+  left_join(means1, by="id") %>% 
+  mutate(Action = factor(actioni,levels=c(0,1),labels=c("No Message","Yes Message"))
+         #,canuse = prop_awakeuse - mean_canuse
+         ) %>% 
+  filter(!is.na(Action)) %>% 
+  group_by(day, Action) %>% 
+  summarise(mcanuse=mean(prop_awakeuse, na.rm = TRUE)) %>%
+  ggplot(aes(day, mcanuse, color = Action, fill=Action)) +
+  geom_hline(yintercept = 0, color="gray") +
+  geom_point(size=2,alpha=0.7) +
+  scale_color_manual(values = colors) +
+  scale_fill_manual(values = colors) +
+  geom_smooth(method = lm, linewidth=1.1, alpha=0.20) +
+  scale_x_continuous(breaks = c(1,5,10,15,20,25,30),expand = c(0,0.1),limits=c(1,30)) +
+  theme_bw()+
+  coord_cartesian(ylim=c(0,0.5)) +
+  theme(legend.position = "bottom",
+        legend.title=element_blank(),
+        plot.title=element_text(size=11), 
+        axis.title=element_text(size=11),
+        axis.text.x=element_text(size=11),
+        axis.text.y=element_text(size=11)) +
+  labs(x = "Day in Study",
+       y = "Mean Proportion of Waking Hours Using Cannabis") 
+
+print(t2)
+
+
 ```
 
 \newpage
@@ -384,6 +426,14 @@ cowplot::plot_grid(
 - 13.3. *cann_likely_bl* [a]: baseline likelihood to change that is how likely one is to cut back cannabis use on a scale from 0 (Not at all) to 10 (Very) at the time of baseline survey,  
   
 - 13.4. *cann_conf_bl* [a]: baseline confidence to change that is how confident one is to cut back cannabis use on a scale from 0 (Not at all) to 10 (Very) at the time of baseline survey, 
+
+- 13.5. *cann_importance_bl* [a]: baseline motivation to change on a scale from 0 (Not at all) to 10 (Very) at the time of baseline survey, when restricting to within week 1 (days 1-7),
+
+- 13.6. *cann_importance_bl* [a]: baseline motivation to change on a scale from 0 (Not at all) to 10 (Very) at the time of baseline survey, when restricting to within week 2 (days 8-14),
+
+- 13.7. *cann_importance_bl* [a]: baseline motivation to change on a scale from 0 (Not at all) to 10 (Very) at the time of baseline survey, when restricting to within week 3 (days 15-21),
+
+- 13.8. *cann_importance_bl* [a]: baseline motivation to change on a scale from 0 (Not at all) to 10 (Very) at the time of baseline survey, when restricting to within week 4 onwards (days 22-30),
   
 14. *phq2_tot_bl*: baseline mental health, which is the sum across two item scale PHQ-2 ("Over the last two weeks, how often have you been bothered by any of the following problems? Little interest or pleasure in doing things" and "Over the last two weeks, how often have you been bothered by any of the following problems? Feeling down, depressed, or hopeless" with response values of 0=Not at all, 1= Several days, 2=More than half the days, and 3=Nearly every day).
 
@@ -747,7 +797,8 @@ fit12b <- wcls(
 r[[22]] <- summary(fit12b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 12.2")
 
-fit13 <- wcls(
+# b1 + b3*(4.8) = 0.009 + ((-0.005) * 4.8)
+fit13_can <- wcls(
     data = df,
     id = "id",
     outcome = "prop_awakeuse",
@@ -757,7 +808,7 @@ fit13 <- wcls(
     control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
 )
 
-r[[23]] <- summary(fit13,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+r[[23]] <- summary(fit13_can,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 13")
 
 fit13b <- wcls(
@@ -799,6 +850,61 @@ fit13d <- wcls(
 r[[26]] <- summary(fit13d)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 13.4")
 
+df_temp <- df %>% filter(wks_since_interv_start==1)
+fit13e <- wcls(
+    data = df_temp,
+    id = "id",
+    outcome = "prop_awakeuse",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~cann_importance_bl,
+    control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+)
+
+r[[27]] <- summary(fit13e,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 13.5")
+
+df_temp <- df %>% filter(wks_since_interv_start==2)
+fit13f <- wcls(
+    data = df_temp,
+    id = "id",
+    outcome = "prop_awakeuse",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~cann_importance_bl,
+    control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+)
+
+r[[28]] <- summary(fit13f,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 13.6")
+
+df_temp <- df %>% filter(wks_since_interv_start==3)
+fit13g <- wcls(
+    data = df_temp,
+    id = "id",
+    outcome = "prop_awakeuse",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~cann_importance_bl,
+    control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+)
+
+r[[29]] <- summary(fit13g,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 13.7")
+
+df_temp <- df %>% filter(wks_since_interv_start==4)
+fit13h <- wcls(
+    data = df_temp,
+    id = "id",
+    outcome = "prop_awakeuse",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~cann_importance_bl,
+    control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+)
+
+r[[30]] <- summary(fit13h,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Moderation Effect Model 13.8")
 
 fit14 <- wcls(
     data = df,
@@ -810,7 +916,7 @@ fit14 <- wcls(
     control_formula = ~phq2_tot_bl + cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
 )
 
-r[[27]] <- summary(fit14)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+r[[31]] <- summary(fit14)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 14")
 
 
@@ -860,12 +966,44 @@ res_table <- function(res){
 }
 
 res_table(res)
+
 ```
 
 \newpage
 
 # 2. Primary Aims Analysis (Part 2) with Proximal Intervention Engagement Outcome
-    
+  
+## Initial Diagnostics  
+  
+First, let us examine the app_use_flag to see whether this solely captures browsing aside from EMA completion.
+
+```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE}
+
+# run with sample size that reflects only missingness in proximal intervention engagement
+df_engag_temp <- full_dat %>%
+  dplyr::group_by(id) %>%
+  dplyr::mutate(app_use_flag_l = lead(app_use_flag)) %>%
+  dplyr::ungroup()%>%
+  # restrict to participants with at least 3 completed EMAs
+  dplyr::filter(num_emas_l >= 3) %>%
+  # remove observations where the randomization information is missing
+  dplyr::filter(missing_rand != 1) %>%
+  dplyr::filter(!is.na(app_use_flag_l))
+
+app_use_flag_freq <- df_engag_temp %>%
+  dplyr::mutate(flag=1)%>%
+  dplyr::group_by(app_use_flag_l,completed_ema_l) %>%
+  # denominator is 7038 DPs in engagement analysis sample
+  dplyr::summarise( count = sum(flag,na.rm=T),
+             percent = 100*round((count / 7038), 3))%>%
+  dplyr::ungroup()
+
+app_use_flag_freq %>%
+  kable(
+    align = "c", caption = "Crosstabulation of app use flag variable and indicator for EMA completed $(N=7038 DPs)$")%>%
+  kable_classic(full_width = F)
+
+```
 ## *Preliminary* Causal Excursion Effect Estimates
   
 **Research Question 3**: Investigate whether, on average, there is a proximal effect of delivering an intervention message on proximal intervention engagement.   
@@ -1860,9 +1998,91 @@ res_table <- function(res){
 
 res_table(res)
 ```
+\newpage
+# 3. Draft Interpretation Sentences 
 
+## Motivation Score Effect Moderation for Proximal Cannabis Use
 
-
-
+The effect moderation model is specified as follows:
   
+$Y_{i,t+1}|Z = \beta_0 + \beta_1I(A_{it}-0.5) + \beta_2Mc_i + \beta_3 (I(A_{it}-0.5)*Mc_i) + \epsilon$   
+  
+where $Z$ reflects the matrix of precision covariates and the action probabilities, denoted by $A_{it}$, are centered. We also grand mean center the candidate moderator of motivation score, denoted by $Mc_i$. 
+
+$E(Y_{i,t+1}|Z, A_{it}=0) = \beta_0 + \beta_2Mc_i + \epsilon$  
+$E(Y_{i,t+1}|Z, A_{it}=1) = \beta_0 + \beta_1 + \beta_2Mc_i + \beta_3Mc_i + \epsilon$  
+$E(Y_{i,t+1}|Z, A_{it}=1) = (\beta_0 + \beta_1) + (\beta_2 + \beta_3)Mc_i + \epsilon$ 
+
+Next, let us examine the estimates and plug in the corresponding values to the simple slopes representation of the interaction effect.
+```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE}  
+print(fit13_can)
+```
+
+$P(Y_{i,t+1}|Z, A_{it}=0) = \hat{\beta_0} + \hat{\beta_2}Mc_i$     
+$P(Y_{i,t+1}|Z, A_{it}=0) = 0.1794963082 +  -0.0004387147Mc_i$        
+$P(Y_{i,t+1}|Z, A_{it}=1) = (\hat{\beta_0} + \hat{\beta_1}) + (\hat{\beta_2} + \hat{\beta_3})Mc_i$   
+$P(Y_{i,t+1}|Z, A_{it}=1)  = (0.1794963082 + 0.0086471773) + (-0.0004387147 + (-0.0052578510))Mc_i$  
+$P(Y_{i,t+1}|Z, A_{it}=1)  = (0.1881435) + (-0.005696566)Mc_i$
+
+\newpage
+Next, since motivation score is continuous to better understand the effect moderation, we plug in -1 SD, mean and +1 SD from the mean of motivation to change and compute the difference in slopes, that is, $\beta_2 + \beta_3Mc$. The results are shown in plot below with three grey vertical lines at +/- 1 SD and the mean.
+
+```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE}  
+
+#quantile(df$cann_importance_bl, prob=c(.25,.5,.75), type=1)
+#sd(df$cann_importance_bl)
+#round(mean(df$cann_importance_bl),4)
+summary(fit13_can, lincomb = rbind(c(1, -2.28), c(1, 0.001), c(1, 2.28)))
+
+colors <- c("#dc0000ff","#00a087ff")
+means1 <- df %>%
+  group_by(id) %>%
+  summarise(mean_canuse = mean(prop_awakeuse,na.rm=T))%>%
+  ungroup()
+
+m1 <- df %>% 
+  left_join(means1, by="id") %>% 
+  mutate(Action = factor(actioni,levels=c(0,1),labels=c("No Message","Yes Message"))
+         #,canuse = prop_awakeuse - mean_canuse
+         ) %>% 
+  filter(!is.na(Action)) %>%
+  mutate(flag= 1) %>%
+  group_by(cann_importance_bl, Action) %>% 
+  summarise(mcanuse=mean(prop_awakeuse, na.rm = TRUE),
+            count = sum(flag,na.rm=T)) %>%
+  ggplot(aes(cann_importance_bl, mcanuse, color = Action, fill=Action, size=count)) +
+  geom_vline(xintercept = -2.28, color="gray70", linetype="twodash") + 
+  geom_vline(xintercept = 2.28, color="gray70", linetype="twodash") + 
+  geom_vline(xintercept = 0, color="gray70", linetype="twodash") + 
+  geom_text(aes(x=-1.2, 
+                label="Diff at -1 SD: 0.021", y=0.15), 
+            colour="black", size=8/.pt) +
+  geom_text(aes(x=1, 
+                label="Diff at mean: 0.009", y=0.15), 
+            colour="black", size=8/.pt) +
+  geom_text(aes(x=3.4, 
+                label="Diff at +1 SD: -0.003", y=0.15), 
+            colour="black", size=8/.pt) +
+  geom_abline(intercept = 0.1794963082, slope=-0.0004387147, linewidth=1, color=colors[1], linetype="dashed") +
+  geom_abline(intercept = 0.1881435, slope=-0.005696566, linewidth=1, color=colors[2], linetype="dashed") +
+  geom_hline(yintercept = 0, color="gray",) + 
+  geom_point(alpha=0.5) +
+  scale_size(range = c(1.5,6), name="Count of Decision Points") + 
+  scale_color_manual(values = colors) +
+  scale_fill_manual(values = colors) +
+  #coord_cartesian(ylim=c(0,0.6)) +
+  #stat_smooth(method = lm, linewidth=1, se=FALSE, fullrange = TRUE) +
+  #scale_x_continuous(expand=c(0,0.1),limits=c(-5,5.2)) +
+  theme_bw()+
+  theme(legend.position = "bottom",
+        #legend.title=element_blank(),
+        plot.title=element_text(size=10), 
+        axis.title=element_text(size=10),
+        axis.text.x=element_text(size=10),
+        axis.text.y=element_text(size=10)) +
+  labs(x = "Standardized Baseline Motivation Score",
+       y = "Estimated Proportion of Waking Hours Using Cannabis") 
+
+print(m1)
+```
   
