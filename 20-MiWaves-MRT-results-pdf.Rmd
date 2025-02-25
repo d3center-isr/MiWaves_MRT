@@ -459,14 +459,14 @@ vars.standardize <- c("prop_awakeuse_prior","cov_prop_awakeuse_48hrs",
                       "prior_interv_engag","cov_interv_engag_72hrs","prior_sent_messages_48hrs",
                       "canndays_bl","dsmsc_tot_bl",
                       "cann_importance_bl","cann_likely_bl","cann_conf_bl",
-                      "phq2_tot_bl","cannwake_bl")
+                      "phq2_tot_bl","cannwake_bl","cannhours_bl","cov_humtch_binary_48hrs")
 
 cntr_fnc <- function(var){
   var - mean(var,na.rm=T)
 }
 
 df <- df %>%
-  dplyr::mutate(across(all_of(vars.standardize),cntr_fnc,.names = "{col}"))
+  dplyr::mutate(across(all_of(vars.standardize),cntr_fnc,.names = "{col}_c"))
 
 r <- list()
 
@@ -490,7 +490,7 @@ fit_wcov <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~ cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    control_formula = ~ cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[2]] <- summary(fit_wcov)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -503,7 +503,7 @@ fit1 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~timeofday,
-    control_formula = ~ cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    control_formula = ~ cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[3]] <- summary(fit1)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -521,7 +521,7 @@ fit2 <- wcls(
     treatment = "interact_A_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[4]] <- summary(fit2)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -540,7 +540,7 @@ fit2b <- wcls(
     treatment = "interact_B_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[5]] <- summary(fit2b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -560,7 +560,7 @@ fit2c <- wcls(
     treatment = "interact_C_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[6]] <- summary(fit2c)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -574,8 +574,8 @@ fit3 <- wcls(
     outcome = "prop_awakeuse",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~prop_awakeuse_prior,
-    control_formula = ~prop_awakeuse_prior + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    moderator_formula = ~prop_awakeuse_prior_c,
+    control_formula = ~prop_awakeuse_prior_c + cov_interv_engag_72hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[7]] <- summary(fit3)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -588,8 +588,8 @@ fit3b <- wcls(
     outcome = "prop_awakeuse",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~cov_prop_awakeuse_48hrs,
-    control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    moderator_formula = ~cov_prop_awakeuse_48hrs_c,
+    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[8]] <- summary(fit3b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -603,7 +603,7 @@ fit4 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~wks_since_interv_start,
-    control_formula = ~wks_since_interv_start + cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    control_formula = ~wks_since_interv_start + cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[9]] <- summary(fit4)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -617,7 +617,7 @@ fit4b <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~after_day15,
-    control_formula = ~after_day15 + cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    control_formula = ~after_day15 + cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[10]] <- summary(fit4b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -630,7 +630,7 @@ fit5 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~week_day_binary,
-    control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[11]] <- summary(fit5)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -643,8 +643,8 @@ fit6 <- wcls(
     outcome = "prop_awakeuse",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~prior_interv_engag,
-    control_formula = ~cov_prop_awakeuse_48hrs + prior_interv_engag  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    moderator_formula = ~prior_interv_engag_c,
+    control_formula = ~cov_prop_awakeuse_48hrs_c + prior_interv_engag_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[12]] <- summary(fit6)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -656,8 +656,8 @@ fit6b <- wcls(
     outcome = "prop_awakeuse",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~cov_interv_engag_72hrs,
-    control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    moderator_formula = ~cov_interv_engag_72hrs_c,
+    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[13]] <- summary(fit6b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -671,7 +671,7 @@ fit7 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~prior_sent_message,
-    control_formula = ~prior_sent_message + cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    control_formula = ~prior_sent_message + cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[14]] <- summary(fit7)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -684,8 +684,8 @@ fit7b <- wcls(
     outcome = "prop_awakeuse",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~prior_sent_messages_48hrs,
-    control_formula = ~prior_sent_messages_48hrs + cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    moderator_formula = ~prior_sent_messages_48hrs_c,
+    control_formula = ~prior_sent_messages_48hrs_c + cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[15]] <- summary(fit7b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -704,7 +704,7 @@ fit8 <- wcls(
     treatment = "short_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[16]] <- summary(fit8)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -724,7 +724,7 @@ fit8b <- wcls(
     treatment = "long_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[17]] <- summary(fit8b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -738,7 +738,7 @@ fit9 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~male_sex,
-    control_formula = ~male_sex + cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    control_formula = ~male_sex + cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[18]] <- summary(fit9)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -751,7 +751,7 @@ fit10 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~white_race,
-    control_formula = ~white_race + cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    control_formula = ~white_race + cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[19]] <- summary(fit10)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -765,7 +765,7 @@ fit11 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~hispanic_ethn,
-    control_formula = ~hispanic_ethn + cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    control_formula = ~hispanic_ethn + cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[20]] <- summary(fit11)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -777,8 +777,8 @@ fit12 <- wcls(
     outcome = "prop_awakeuse",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~canndays_bl,
-    control_formula = ~ canndays_bl + cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    moderator_formula = ~canndays_bl_c,
+    control_formula = ~ canndays_bl_c + cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[21]] <- summary(fit12)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -790,8 +790,8 @@ fit12b <- wcls(
     outcome = "prop_awakeuse",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~dsmsc_tot_bl,
-    control_formula = ~dsmsc_tot_bl + cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    moderator_formula = ~dsmsc_tot_bl_c,
+    control_formula = ~dsmsc_tot_bl_c + cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[22]] <- summary(fit12b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -804,8 +804,8 @@ fit13_can <- wcls(
     outcome = "prop_awakeuse",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~cann_importance_bl,
-    control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    moderator_formula = ~cann_importance_bl_c,
+    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[23]] <- summary(fit13_can,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -818,7 +818,7 @@ fit13b <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~high_cann_importance_bl,
-    control_formula = ~high_cann_importance_bl + cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    control_formula = ~high_cann_importance_bl + cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[24]] <- summary(fit13b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -830,8 +830,8 @@ fit13c <- wcls(
     outcome = "prop_awakeuse",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~cann_likely_bl,
-    control_formula = ~cann_likely_bl + cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    moderator_formula = ~cann_likely_bl_c,
+    control_formula = ~cann_likely_bl_c + cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[25]] <- summary(fit13c)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -843,8 +843,8 @@ fit13d <- wcls(
     outcome = "prop_awakeuse",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~cann_conf_bl,
-    control_formula = ~cann_conf_bl + cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    moderator_formula = ~cann_conf_bl_c,
+    control_formula = ~cann_conf_bl_c + cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[26]] <- summary(fit13d)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -857,8 +857,8 @@ fit13e <- wcls(
     outcome = "prop_awakeuse",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~cann_importance_bl,
-    control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    moderator_formula = ~cann_importance_bl_c,
+    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[27]] <- summary(fit13e,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -871,8 +871,8 @@ fit13f <- wcls(
     outcome = "prop_awakeuse",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~cann_importance_bl,
-    control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    moderator_formula = ~cann_importance_bl_c,
+    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[28]] <- summary(fit13f,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -885,8 +885,8 @@ fit13g <- wcls(
     outcome = "prop_awakeuse",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~cann_importance_bl,
-    control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    moderator_formula = ~cann_importance_bl_c,
+    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[29]] <- summary(fit13g,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -899,8 +899,8 @@ fit13h <- wcls(
     outcome = "prop_awakeuse",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~cann_importance_bl,
-    control_formula = ~cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    moderator_formula = ~cann_importance_bl_c,
+    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[30]] <- summary(fit13h,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -912,8 +912,8 @@ fit14 <- wcls(
     outcome = "prop_awakeuse",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~phq2_tot_bl,
-    control_formula = ~phq2_tot_bl + cov_prop_awakeuse_48hrs + cov_interv_engag_72hrs  + timeofday + week_day_binary + cann_importance_bl + cannhours_bl + cannwake_bl
+    moderator_formula = ~phq2_tot_bl_c,
+    control_formula = ~phq2_tot_bl_c + cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[31]] <- summary(fit14)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1114,7 +1114,7 @@ fit_wcov <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~ timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    control_formula = ~ timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[2]] <- summary(fit_wcov)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1128,7 +1128,7 @@ fit1 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~timeofday,
-    control_formula = ~ timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    control_formula = ~ timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[3]] <- summary(fit1)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1142,8 +1142,8 @@ fit2 <- wcls(
     outcome = "interv_engagement_l",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~prior_interv_engag,
-    control_formula = ~timeofday + week_day_binary + prior_interv_engag + cov_humtch_binary_48hrs
+    moderator_formula = ~prior_interv_engag_c,
+    control_formula = ~timeofday + week_day_binary + prior_interv_engag_c + cov_humtch_binary_48hrs_c
 )
 
 r[[4]] <- summary(fit2)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1155,8 +1155,8 @@ fit2b <- wcls(
     outcome = "interv_engagement_l",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~cov_interv_engag_72hrs,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    moderator_formula = ~cov_interv_engag_72hrs_c,
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[5]] <- summary(fit2b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1169,8 +1169,8 @@ fit3 <- wcls(
     outcome = "interv_engagement_l",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~prop_awakeuse_prior,
-    control_formula = ~prop_awakeuse_prior + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    moderator_formula = ~prop_awakeuse_prior_c,
+    control_formula = ~prop_awakeuse_prior_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[6]] <- summary(fit3)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1183,8 +1183,8 @@ fit3b <- wcls(
     outcome = "interv_engagement_l",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~cov_prop_awakeuse_48hrs,
-    control_formula = ~cov_prop_awakeuse_48hrs + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    moderator_formula = ~cov_prop_awakeuse_48hrs_c,
+    control_formula = ~cov_prop_awakeuse_48hrs_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[7]] <- summary(fit3b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1198,7 +1198,7 @@ fit4 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~wks_since_interv_start,
-    control_formula = ~wks_since_interv_start + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    control_formula = ~wks_since_interv_start + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[8]] <- summary(fit4)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1211,7 +1211,7 @@ fit5 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~week_day_binary,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[9]] <- summary(fit5)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1225,7 +1225,7 @@ fit6 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~prior_sent_message,
-    control_formula = ~prior_sent_message + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    control_formula = ~prior_sent_message + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[10]] <- summary(fit7)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1238,8 +1238,8 @@ fit6b <- wcls(
     outcome = "interv_engagement_l",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~prior_sent_messages_48hrs,
-    control_formula = ~prior_sent_messages_48hrs + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    moderator_formula = ~prior_sent_messages_48hrs_c,
+    control_formula = ~prior_sent_messages_48hrs_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[11]] <- summary(fit6b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1258,7 +1258,7 @@ fit7 <- wcls(
     treatment = "interact_A_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[12]] <- summary(fit7)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1277,7 +1277,7 @@ fit7b <- wcls(
     treatment = "interact_B_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[13]] <- summary(fit7b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1297,7 +1297,7 @@ fit7c <- wcls(
     treatment = "interact_C_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[14]] <- summary(fit7c)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1316,7 +1316,7 @@ fit8 <- wcls(
     treatment = "short_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[15]] <- summary(fit8)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1336,7 +1336,7 @@ fit8b <- wcls(
     treatment = "long_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[16]] <- summary(fit8b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1348,8 +1348,8 @@ fit9 <- wcls(
     outcome = "interv_engagement_l",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~cov_humtch_binary_48hrs,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    moderator_formula = ~cov_humtch_binary_48hrs_c,
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[17]] <- summary(fit9)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1362,7 +1362,7 @@ fit10 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~male_sex,
-    control_formula = ~male_sex + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    control_formula = ~male_sex + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[18]] <- summary(fit10)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1375,7 +1375,7 @@ fit11 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~white_race,
-    control_formula = ~white_race + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    control_formula = ~white_race + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[19]] <- summary(fit11)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1389,7 +1389,7 @@ fit12 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~hispanic_ethn,
-    control_formula = ~hispanic_ethn + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    control_formula = ~hispanic_ethn + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[20]] <- summary(fit12)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1401,8 +1401,8 @@ fit13 <- wcls(
     outcome = "interv_engagement_l",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~canndays_bl,
-    control_formula = ~ canndays_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    moderator_formula = ~canndays_bl_c,
+    control_formula = ~ canndays_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[21]] <- summary(fit13)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1414,8 +1414,8 @@ fit13b <- wcls(
     outcome = "interv_engagement_l",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~dsmsc_tot_bl,
-    control_formula = ~dsmsc_tot_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    moderator_formula = ~dsmsc_tot_bl_c,
+    control_formula = ~dsmsc_tot_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[22]] <- summary(fit13b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1427,8 +1427,8 @@ fit14 <- wcls(
     outcome = "interv_engagement_l",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~cann_importance_bl,
-    control_formula = ~cann_importance_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    moderator_formula = ~cann_importance_bl_c,
+    control_formula = ~cann_importance_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[23]] <- summary(fit14)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1441,7 +1441,7 @@ fit14b <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~high_cann_importance_bl,
-    control_formula = ~high_cann_importance_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    control_formula = ~high_cann_importance_bl + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[24]] <- summary(fit14b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1453,8 +1453,8 @@ fit14c <- wcls(
     outcome = "interv_engagement_l",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~cann_likely_bl,
-    control_formula = ~cann_likely_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    moderator_formula = ~cann_likely_bl_c,
+    control_formula = ~cann_likely_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[25]] <- summary(fit14c,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1466,8 +1466,8 @@ fit14d <- wcls(
     outcome = "interv_engagement_l",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~cann_conf_bl,
-    control_formula = ~cann_conf_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    moderator_formula = ~cann_conf_bl_c,
+    control_formula = ~cann_conf_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[26]] <- summary(fit14d, lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1480,8 +1480,8 @@ fit15 <- wcls(
     outcome = "interv_engagement_l",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~phq2_tot_bl,
-    control_formula = ~phq2_tot_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    moderator_formula = ~phq2_tot_bl_c,
+    control_formula = ~phq2_tot_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[27]] <- summary(fit15)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1554,6 +1554,9 @@ df_engag <- full_dat %>%
   dplyr::filter(missing_rand != 1) %>%
   dplyr::filter(!is.na(interv_engagement_l))
 
+df_engag <- df_engag %>%
+  dplyr::mutate(across(all_of(vars.standardize),cntr_fnc,.names = "{col}_c"))
+
 #print(paste0("Common Sample Size: ",nrow(df)))
 #print(paste0("Engagement Sample Size: ",nrow(df_engag)))
 
@@ -1581,7 +1584,7 @@ fit_wcov_b <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~ timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    control_formula = ~ timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[2]] <- summary(fit_wcov_b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1595,7 +1598,7 @@ fit1 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~timeofday,
-    control_formula = ~ timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[3]] <- summary(fit1)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1609,8 +1612,8 @@ fit2 <- wcls(
     outcome = "interv_engagement_l",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~prior_interv_engag,
-    control_formula = ~timeofday + week_day_binary + prior_interv_engag + cov_humtch_binary_48hrs
+    moderator_formula = ~prior_interv_engag_c,
+    control_formula = ~timeofday + week_day_binary + prior_interv_engag_c + cov_humtch_binary_48hrs_c
 )
 
 r[[4]] <- summary(fit2)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1622,8 +1625,8 @@ fit2b <- wcls(
     outcome = "interv_engagement_l",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~cov_interv_engag_72hrs,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    moderator_formula = ~cov_interv_engag_72hrs_c,
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[5]] <- summary(fit2b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1636,8 +1639,8 @@ fit3 <- wcls(
     outcome = "interv_engagement_l",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~prop_awakeuse_prior,
-    control_formula = ~prop_awakeuse_prior + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    moderator_formula = ~prop_awakeuse_prior_c,
+    control_formula = ~prop_awakeuse_prior_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[6]] <- summary(fit3)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1650,8 +1653,8 @@ fit3b <- wcls(
     outcome = "interv_engagement_l",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~cov_prop_awakeuse_48hrs,
-    control_formula = ~cov_prop_awakeuse_48hrs + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    moderator_formula = ~cov_prop_awakeuse_48hrs_c,
+    control_formula = ~cov_prop_awakeuse_48hrs_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[7]] <- summary(fit3b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1665,7 +1668,7 @@ fit4 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~wks_since_interv_start,
-    control_formula = ~wks_since_interv_start + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    control_formula = ~wks_since_interv_start + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[8]] <- summary(fit4)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1678,7 +1681,7 @@ fit5 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~week_day_binary,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[9]] <- summary(fit5)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1692,7 +1695,7 @@ fit6 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~prior_sent_message,
-    control_formula = ~prior_sent_message + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    control_formula = ~prior_sent_message + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[10]] <- summary(fit7)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1705,8 +1708,8 @@ fit6b <- wcls(
     outcome = "interv_engagement_l",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~prior_sent_messages_48hrs,
-    control_formula = ~prior_sent_messages_48hrs + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    moderator_formula = ~prior_sent_messages_48hrs_c,
+    control_formula = ~prior_sent_messages_48hrs_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[11]] <- summary(fit6b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1725,7 +1728,7 @@ fit7 <- wcls(
     treatment = "interact_A_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[12]] <- summary(fit7)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1744,7 +1747,7 @@ fit7b <- wcls(
     treatment = "interact_B_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[13]] <- summary(fit7b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1764,7 +1767,7 @@ fit7c <- wcls(
     treatment = "interact_C_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[14]] <- summary(fit7c)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1783,7 +1786,7 @@ fit8 <- wcls(
     treatment = "short_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[15]] <- summary(fit8)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1803,7 +1806,7 @@ fit8b <- wcls(
     treatment = "long_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[16]] <- summary(fit8b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1815,8 +1818,8 @@ fit9 <- wcls(
     outcome = "interv_engagement_l",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~cov_humtch_binary_48hrs,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    moderator_formula = ~cov_humtch_binary_48hrs_c,
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[17]] <- summary(fit9)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1829,7 +1832,7 @@ fit10 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~male_sex,
-    control_formula = ~male_sex + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    control_formula = ~male_sex + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[18]] <- summary(fit10)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1842,7 +1845,7 @@ fit11 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~white_race,
-    control_formula = ~white_race + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    control_formula = ~white_race + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[19]] <- summary(fit11)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1856,7 +1859,7 @@ fit12 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~hispanic_ethn,
-    control_formula = ~hispanic_ethn + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    control_formula = ~hispanic_ethn + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[20]] <- summary(fit12)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1868,8 +1871,8 @@ fit13 <- wcls(
     outcome = "interv_engagement_l",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~canndays_bl,
-    control_formula = ~ canndays_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    moderator_formula = ~canndays_bl_c,
+    control_formula = ~ canndays_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[21]] <- summary(fit13)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1881,8 +1884,8 @@ fit13b <- wcls(
     outcome = "interv_engagement_l",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~dsmsc_tot_bl,
-    control_formula = ~dsmsc_tot_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    moderator_formula = ~dsmsc_tot_bl_c,
+    control_formula = ~dsmsc_tot_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[22]] <- summary(fit13b,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1894,8 +1897,8 @@ fit14 <- wcls(
     outcome = "interv_engagement_l",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~cann_importance_bl,
-    control_formula = ~cann_importance_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    moderator_formula = ~cann_importance_bl_c,
+    control_formula = ~cann_importance_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[23]] <- summary(fit14)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1908,7 +1911,7 @@ fit14b <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~high_cann_importance_bl,
-    control_formula = ~high_cann_importance_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    control_formula = ~high_cann_importance_bl + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[24]] <- summary(fit14b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1920,8 +1923,8 @@ fit14c <- wcls(
     outcome = "interv_engagement_l",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~cann_likely_bl,
-    control_formula = ~cann_likely_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    moderator_formula = ~cann_likely_bl_c,
+    control_formula = ~cann_likely_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[25]] <- summary(fit14c,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1933,8 +1936,8 @@ fit14d <- wcls(
     outcome = "interv_engagement_l",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~cann_conf_bl,
-    control_formula = ~cann_conf_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    moderator_formula = ~cann_conf_bl_c,
+    control_formula = ~cann_conf_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[26]] <- summary(fit14d,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1947,8 +1950,8 @@ fit15 <- wcls(
     outcome = "interv_engagement_l",
     treatment = "actioni",
     rand_prob = "probi",
-    moderator_formula = ~phq2_tot_bl,
-    control_formula = ~phq2_tot_bl + timeofday + week_day_binary + cov_interv_engag_72hrs + cov_humtch_binary_48hrs
+    moderator_formula = ~phq2_tot_bl_c,
+    control_formula = ~phq2_tot_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[27]] <- summary(fit15,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -2030,8 +2033,8 @@ Next, since motivation score is continuous to better understand the effect moder
 ```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE}  
 
 #quantile(df$cann_importance_bl, prob=c(.25,.5,.75), type=1)
-#sd(df$cann_importance_bl)
-#round(mean(df$cann_importance_bl),4)
+#sd(df$cann_importance_bl_c)
+#round(mean(df$cann_importance_bl_c),4)
 summary(fit13_can, lincomb = rbind(c(1, -2.28), c(1, 0.001), c(1, 2.28)))
 
 colors <- c("#dc0000ff","#00a087ff")
@@ -2047,10 +2050,10 @@ m1 <- df %>%
          ) %>% 
   filter(!is.na(Action)) %>%
   mutate(flag= 1) %>%
-  group_by(cann_importance_bl, Action) %>% 
+  group_by(cann_importance_bl_c, Action) %>% 
   summarise(mcanuse=mean(prop_awakeuse, na.rm = TRUE),
             count = sum(flag,na.rm=T)) %>%
-  ggplot(aes(cann_importance_bl, mcanuse, color = Action, fill=Action, size=count)) +
+  ggplot(aes(cann_importance_bl_c, mcanuse, color = Action, fill=Action, size=count)) +
   geom_vline(xintercept = -2.28, color="gray70", linetype="twodash") + 
   geom_vline(xintercept = 2.28, color="gray70", linetype="twodash") + 
   geom_vline(xintercept = 0, color="gray70", linetype="twodash") + 
@@ -2075,7 +2078,7 @@ m1 <- df %>%
   #scale_x_continuous(expand=c(0,0.1),limits=c(-5,5.2)) +
   theme_bw()+
   theme(legend.position = "bottom",
-        #legend.title=element_blank(),
+        legend.title=element_text(size=9),
         plot.title=element_text(size=10), 
         axis.title=element_text(size=10),
         axis.text.x=element_text(size=10),
@@ -2084,5 +2087,67 @@ m1 <- df %>%
        y = "Estimated Proportion of Waking Hours Using Cannabis") 
 
 print(m1)
+
+
+# obtain fit for uncentered motivation score
+fit13_can_unc <- wcls(
+    data = df,
+    id = "id",
+    outcome = "prop_awakeuse",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~cann_importance_bl,
+    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c + timeofday + week_day_binary + cann_importance_bl + cannhours_bl_c + cannwake_bl_c
+)
+print(fit13_can_unc)
+#quantile(df$cann_importance_bl, prob=c(.25,.5,.75), type=1)
+#sd(df$cann_importance_bl)
+round(mean(df$cann_importance_bl),4)
+summary(fit13_can_unc, lincomb = rbind(c(1, 2.565786), c(1, 4.8461), c(1, 7.126414)))
+
+m2 <- df %>% 
+  left_join(means1, by="id") %>% 
+  mutate(Action = factor(actioni,levels=c(0,1),labels=c("No Message","Yes Message"))
+         #,canuse = prop_awakeuse - mean_canuse
+         ) %>% 
+  filter(!is.na(Action)) %>%
+  mutate(flag= 1) %>%
+  group_by(cann_importance_bl, Action) %>% 
+  summarise(mcanuse=mean(prop_awakeuse, na.rm = TRUE),
+            count = sum(flag,na.rm=T)) %>%
+  ggplot(aes(cann_importance_bl, mcanuse, color = Action, fill=Action, size=count)) +
+  geom_vline(xintercept = 2.565786, color="gray70", linetype="twodash") + 
+  geom_vline(xintercept = 7.126414, color="gray70", linetype="twodash") + 
+  geom_vline(xintercept = 4.8461, color="gray70", linetype="twodash") + 
+  geom_text(aes(x=2.565786+1, 
+                label="Diff at -1 SD: 0.021", y=0.15), 
+            colour="black", size=8/.pt) +
+  geom_text(aes(x=4.8461+1, 
+                label="Diff at mean: 0.009", y=0.15), 
+            colour="black", size=8/.pt) +
+  geom_text(aes(x=7.126414+1, 
+                label="Diff at +1 SD: -0.003", y=0.15), 
+            colour="black", size=8/.pt) +
+  geom_abline(intercept = 0.1835100493, slope=-0.0004387147, linewidth=1, color=colors[1], linetype="dashed") +
+  geom_abline(intercept = 0.2176373, slope=-0.005696566, linewidth=1, color=colors[2], linetype="dashed") +
+  geom_hline(yintercept = 0, color="gray",) + 
+  geom_point(alpha=0.5) +
+  scale_size(range = c(1.5,6), name="Count of Decision Points") + 
+  scale_color_manual(values = colors) +
+  scale_fill_manual(values = colors) +
+  #coord_cartesian(ylim=c(0,0.6)) +
+  #stat_smooth(method = lm, linewidth=1, se=FALSE, fullrange = TRUE) +
+  #scale_x_continuous(expand=c(0,0.1),limits=c(-5,5.2)) +
+  theme_bw()+
+  theme(legend.position = "bottom",
+        legend.title=element_text(size=9),
+        plot.title=element_text(size=10), 
+        axis.title=element_text(size=10),
+        axis.text.x=element_text(size=10),
+        axis.text.y=element_text(size=10)) +
+  labs(x = "Baseline Motivation Score (0='Not at all' to 10='Very')",
+       y = "Estimated Proportion of Waking Hours Using Cannabis") 
+
+print(m2)
 ```
   
