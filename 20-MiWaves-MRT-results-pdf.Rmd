@@ -2099,11 +2099,13 @@ fit13_can_unc <- wcls(
     moderator_formula = ~cann_importance_bl,
     control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_72hrs_c + timeofday + week_day_binary + cann_importance_bl + cannhours_bl_c + cannwake_bl_c
 )
-print(fit13_can_unc)
+
+# note we obtain the updated intercept values for the simple slopes
+#print(fit13_can_unc)
 #quantile(df$cann_importance_bl, prob=c(.25,.5,.75), type=1)
 #sd(df$cann_importance_bl)
-round(mean(df$cann_importance_bl),4)
-summary(fit13_can_unc, lincomb = rbind(c(1, 2.565786), c(1, 4.8461), c(1, 7.126414)))
+#round(mean(df$cann_importance_bl),4)
+#summary(fit13_can_unc, lincomb = rbind(c(1, 2.565786), c(1, 4.8461), c(1, 7.126414)))
 
 m2 <- df %>% 
   left_join(means1, by="id") %>% 
