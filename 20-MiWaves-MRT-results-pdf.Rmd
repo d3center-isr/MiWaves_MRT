@@ -69,7 +69,7 @@ full_dat <- prim_dat %>%
          hispanic_ethn = ifelse(ethnicity=="Hispanic or Latino", 1, 0),
          hispanic_ethn = factor(hispanic_ethn)) %>%
   dplyr::rename(actioni=intmessage_randassignment, probi= intmessage_randprob, 
-         prior_interv_engag = interv_engagement) %>%
+         prior_interv_engag = pre_engagement_multi) %>%
   dplyr::mutate(timeofday = ifelse(morning==1,0,1),
                 timeofday = factor(timeofday, levels=c(0,1), labels=c("AM", "PM")),
                 week_day_binary = factor(week_day_binary),
@@ -979,7 +979,7 @@ First, let us examine the app_use_flag to see whether this solely captures brows
 
 ```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE}
 
-# run with sample size that reflects only missingness in proximal intervention engagement
+# run with sample size that reflects only missingness in the app use component of intervention engagement
 df_engag_temp <- full_dat %>%
   dplyr::group_by(id) %>%
   dplyr::mutate(app_use_flag_l = lead(app_use_flag)) %>%
@@ -1001,6 +1001,64 @@ app_use_flag_freq <- df_engag_temp %>%
 app_use_flag_freq %>%
   kable(
     align = "c", caption = "Crosstabulation of app use flag variable and indicator for EMA completed $(N=7038 DPs)$")%>%
+  kable_classic(full_width = F)
+
+```
+
+Next, with the newly constructed engagement scores, let us examine the number of decision points where the engagement score changed values, from the old version to the new version. Note that the engagement score displayed below is the multi-category version (*engagement_multi*) and reflects proximal intervention engagement at t+1, i.e. following randomization at t.
+  
+
+```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE}
+
+# run with sample size that reflects only missingness in proximal intervention engagement
+df_engag_temp <- full_dat %>%
+  # restrict to participants with at least 3 completed EMAs
+  dplyr::filter(num_emas_l >= 3) %>%
+  # remove observations where the randomization information is missing
+  dplyr::filter(missing_rand != 1) %>%
+  dplyr::filter(!is.na(engagement_multi))
+
+engag_crosstab <- df_engag_temp %>%
+  dplyr::mutate(flag=1)%>%
+  dplyr::group_by(interv_engagement_l,engagement_multi) %>%
+  # denominator is 7038 DPs in engagement analysis sample
+  dplyr::summarise( count = sum(flag,na.rm=T),
+             percent = 100*round((count / 7038), 3))%>%
+  dplyr::ungroup() %>%
+  dplyr::rename(`old engagement score` = interv_engagement_l, 
+                `new engagement score` = engagement_multi )
+
+engag_crosstab %>%
+  kable(
+    align = "c", caption = "Crosstabulation of old engagement and new engagement scores $(N=7038 DPs)$")%>%
+  kable_classic(full_width = F)
+
+engag_freq_new <- df_engag_temp %>%
+  dplyr::mutate(flag=1)%>%
+  dplyr::group_by(engagement_multi) %>%
+  # denominator is 7038 DPs in engagement analysis sample
+  dplyr::summarise( count = sum(flag,na.rm=T),
+             percent = 100*round((count / 7038), 3))%>%
+  dplyr::ungroup() %>%
+  dplyr::rename(`new engagement score` = engagement_multi)
+
+engag_freq_new %>%
+  kable(
+    align = "c", caption = "Frequency of new engagement score $(N=7038 DPs)$")%>%
+  kable_classic(full_width = F)
+
+engag_freq_old <- df_engag_temp %>%
+  dplyr::mutate(flag=1)%>%
+  dplyr::group_by(interv_engagement_l) %>%
+  # denominator is 7038 DPs in engagement analysis sample
+  dplyr::summarise( count = sum(flag,na.rm=T),
+             percent = 100*round((count / 7038), 3))%>%
+  dplyr::ungroup() %>%
+  dplyr::rename(`old engagement score` = interv_engagement_l)
+
+engag_freq_old %>%
+  kable(
+    align = "c", caption = "Frequency of old engagement score $(N=7038 DPs)$")%>%
   kable_classic(full_width = F)
 
 ```
@@ -1097,7 +1155,7 @@ r <- list()
 fit_wocov <- wcls(
     data = df,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~1,
@@ -1110,7 +1168,7 @@ r[[1]] <- summary(fit_wocov)$causal_excursion_effect %>% as_tibble(rownames = "t
 fit_wcov <- wcls(
     data = df,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~1,
@@ -1124,7 +1182,7 @@ r[[2]] <- summary(fit_wcov)$causal_excursion_effect %>% as_tibble(rownames = "te
 fit1 <- wcls(
     data = df,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~timeofday,
@@ -1139,7 +1197,7 @@ df_temp <- df %>% filter(!is.na(prior_interv_engag))
 fit2 <- wcls(
     data = df_temp,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~prior_interv_engag_c,
@@ -1152,7 +1210,7 @@ r[[4]] <- summary(fit2)$causal_excursion_effect %>% as_tibble(rownames = "term")
 fit2b <- wcls(
     data = df,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cov_interv_engag_72hrs_c,
@@ -1166,7 +1224,7 @@ df_temp <- df %>% filter(!is.na(prop_awakeuse_prior))
 fit3 <- wcls(
     data = df_temp,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~prop_awakeuse_prior_c,
@@ -1180,7 +1238,7 @@ r[[6]] <- summary(fit3)$causal_excursion_effect %>% as_tibble(rownames = "term")
 fit3b <- wcls(
     data = df,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cov_prop_awakeuse_48hrs_c,
@@ -1194,7 +1252,7 @@ r[[7]] <- summary(fit3b)$causal_excursion_effect %>% as_tibble(rownames = "term"
 fit4 <- wcls(
     data = df,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~wks_since_interv_start,
@@ -1207,7 +1265,7 @@ r[[8]] <- summary(fit4)$causal_excursion_effect %>% as_tibble(rownames = "term")
 fit5 <- wcls(
     data = df,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~week_day_binary,
@@ -1221,7 +1279,7 @@ df_temp <- df %>% filter(!is.na(prior_sent_message))
 fit6 <- wcls(
     data = df_temp,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~prior_sent_message,
@@ -1235,7 +1293,7 @@ df_temp <- df %>% filter(!is.na(prior_sent_messages_48hrs))
 fit6b <- wcls(
     data = df_temp,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~prior_sent_messages_48hrs_c,
@@ -1254,7 +1312,7 @@ df_temp <- df %>%
 fit7 <- wcls(
     data = df_temp,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "interact_A_message",
     rand_prob = "probi",
     moderator_formula = ~1,
@@ -1273,7 +1331,7 @@ df_temp <- df %>%
 fit7b <- wcls(
     data = df_temp,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "interact_B_message",
     rand_prob = "probi",
     moderator_formula = ~1,
@@ -1293,7 +1351,7 @@ df_temp <- df %>%
 fit7c <- wcls(
     data = df_temp,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "interact_C_message",
     rand_prob = "probi",
     moderator_formula = ~1,
@@ -1312,7 +1370,7 @@ df_temp <- df %>%
 fit8 <- wcls(
     data = df_temp,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "short_message",
     rand_prob = "probi",
     moderator_formula = ~1,
@@ -1332,7 +1390,7 @@ df_temp <- df %>%
 fit8b <- wcls(
     data = df_temp,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "long_message",
     rand_prob = "probi",
     moderator_formula = ~1,
@@ -1345,7 +1403,7 @@ r[[16]] <- summary(fit8b)$causal_excursion_effect %>% as_tibble(rownames = "term
 fit9 <- wcls(
     data = df,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cov_humtch_binary_48hrs_c,
@@ -1358,7 +1416,7 @@ r[[17]] <- summary(fit9)$causal_excursion_effect %>% as_tibble(rownames = "term"
 fit10 <- wcls(
     data = df,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~male_sex,
@@ -1371,7 +1429,7 @@ r[[18]] <- summary(fit10)$causal_excursion_effect %>% as_tibble(rownames = "term
 fit11 <- wcls(
     data = df,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~white_race,
@@ -1385,7 +1443,7 @@ r[[19]] <- summary(fit11)$causal_excursion_effect %>% as_tibble(rownames = "term
 fit12 <- wcls(
     data = df,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~hispanic_ethn,
@@ -1398,7 +1456,7 @@ r[[20]] <- summary(fit12)$causal_excursion_effect %>% as_tibble(rownames = "term
 fit13 <- wcls(
     data = df,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~canndays_bl_c,
@@ -1411,7 +1469,7 @@ r[[21]] <- summary(fit13)$causal_excursion_effect %>% as_tibble(rownames = "term
 fit13b <- wcls(
     data = df,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~dsmsc_tot_bl_c,
@@ -1424,7 +1482,7 @@ r[[22]] <- summary(fit13b)$causal_excursion_effect %>% as_tibble(rownames = "ter
 fit14 <- wcls(
     data = df,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cann_importance_bl_c,
@@ -1437,7 +1495,7 @@ r[[23]] <- summary(fit14)$causal_excursion_effect %>% as_tibble(rownames = "term
 fit14b <- wcls(
     data = df,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~high_cann_importance_bl,
@@ -1450,7 +1508,7 @@ r[[24]] <- summary(fit14b)$causal_excursion_effect %>% as_tibble(rownames = "ter
 fit14c <- wcls(
     data = df,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cann_likely_bl_c,
@@ -1463,7 +1521,7 @@ r[[25]] <- summary(fit14c,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibb
 fit14d <- wcls(
     data = df,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cann_conf_bl_c,
@@ -1477,7 +1535,7 @@ r[[26]] <- summary(fit14d, lincomb = c(1, 1))$causal_excursion_effect %>% as_tib
 fit15 <- wcls(
     data = df,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~phq2_tot_bl_c,
@@ -1552,7 +1610,7 @@ df_engag <- full_dat %>%
   dplyr::filter(num_emas_l >= 3) %>%
   # remove observations where the randomization information is missing
   dplyr::filter(missing_rand != 1) %>%
-  dplyr::filter(!is.na(interv_engagement_l))
+  dplyr::filter(!is.na(engagement_multi))
 
 df_engag <- df_engag %>%
   dplyr::mutate(across(all_of(vars.standardize),cntr_fnc,.names = "{col}_c"))
@@ -1566,7 +1624,7 @@ r <- list()
 fit_wocov_b <- wcls(
     data = df_engag,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~1,
@@ -1580,7 +1638,7 @@ r[[1]] <- summary(fit_wocov_b)$causal_excursion_effect %>% as_tibble(rownames = 
 fit_wcov_b <- wcls(
     data = df_engag,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~1,
@@ -1594,7 +1652,7 @@ r[[2]] <- summary(fit_wcov_b)$causal_excursion_effect %>% as_tibble(rownames = "
 fit1 <- wcls(
     data = df_engag,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~timeofday,
@@ -1609,7 +1667,7 @@ df_engag_temp <- df_engag %>% filter(!is.na(prior_interv_engag))
 fit2 <- wcls(
     data = df_engag_temp,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~prior_interv_engag_c,
@@ -1622,7 +1680,7 @@ r[[4]] <- summary(fit2)$causal_excursion_effect %>% as_tibble(rownames = "term")
 fit2b <- wcls(
     data = df_engag,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cov_interv_engag_72hrs_c,
@@ -1636,7 +1694,7 @@ df_engag_temp <- df_engag %>% filter(!is.na(prop_awakeuse_prior))
 fit3 <- wcls(
     data = df_engag_temp,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~prop_awakeuse_prior_c,
@@ -1650,7 +1708,7 @@ df_engag_temp <- df_engag %>% filter(!is.na(cov_prop_awakeuse_48hrs))
 fit3b <- wcls(
     data = df_engag_temp,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cov_prop_awakeuse_48hrs_c,
@@ -1664,7 +1722,7 @@ r[[7]] <- summary(fit3b)$causal_excursion_effect %>% as_tibble(rownames = "term"
 fit4 <- wcls(
     data = df_engag,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~wks_since_interv_start,
@@ -1677,7 +1735,7 @@ r[[8]] <- summary(fit4)$causal_excursion_effect %>% as_tibble(rownames = "term")
 fit5 <- wcls(
     data = df_engag,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~week_day_binary,
@@ -1691,7 +1749,7 @@ df_engag_temp <- df_engag %>% filter(!is.na(prior_sent_message))
 fit6 <- wcls(
     data = df_engag_temp,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~prior_sent_message,
@@ -1705,7 +1763,7 @@ df_engag_temp <- df_engag %>% filter(!is.na(prior_sent_messages_48hrs))
 fit6b <- wcls(
     data = df_engag_temp,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~prior_sent_messages_48hrs_c,
@@ -1724,7 +1782,7 @@ df_engag_temp <- df_engag %>%
 fit7 <- wcls(
     data = df_engag_temp,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "interact_A_message",
     rand_prob = "probi",
     moderator_formula = ~1,
@@ -1743,7 +1801,7 @@ df_engag_temp <- df_engag %>%
 fit7b <- wcls(
     data = df_engag_temp,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "interact_B_message",
     rand_prob = "probi",
     moderator_formula = ~1,
@@ -1763,7 +1821,7 @@ df_engag_temp <- df_engag %>%
 fit7c <- wcls(
     data = df_engag_temp,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "interact_C_message",
     rand_prob = "probi",
     moderator_formula = ~1,
@@ -1782,7 +1840,7 @@ df_engag_temp <- df_engag %>%
 fit8 <- wcls(
     data = df_engag_temp,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "short_message",
     rand_prob = "probi",
     moderator_formula = ~1,
@@ -1802,7 +1860,7 @@ df_engag_temp <- df_engag %>%
 fit8b <- wcls(
     data = df_engag_temp,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "long_message",
     rand_prob = "probi",
     moderator_formula = ~1,
@@ -1815,7 +1873,7 @@ r[[16]] <- summary(fit8b)$causal_excursion_effect %>% as_tibble(rownames = "term
 fit9 <- wcls(
     data = df_engag,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cov_humtch_binary_48hrs_c,
@@ -1828,7 +1886,7 @@ r[[17]] <- summary(fit9)$causal_excursion_effect %>% as_tibble(rownames = "term"
 fit10 <- wcls(
     data = df_engag,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~male_sex,
@@ -1841,7 +1899,7 @@ r[[18]] <- summary(fit10)$causal_excursion_effect %>% as_tibble(rownames = "term
 fit11 <- wcls(
     data = df_engag,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~white_race,
@@ -1855,7 +1913,7 @@ r[[19]] <- summary(fit11)$causal_excursion_effect %>% as_tibble(rownames = "term
 fit12 <- wcls(
     data = df_engag,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~hispanic_ethn,
@@ -1868,7 +1926,7 @@ r[[20]] <- summary(fit12)$causal_excursion_effect %>% as_tibble(rownames = "term
 fit13 <- wcls(
     data = df_engag,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~canndays_bl_c,
@@ -1881,7 +1939,7 @@ r[[21]] <- summary(fit13)$causal_excursion_effect %>% as_tibble(rownames = "term
 fit13b <- wcls(
     data = df_engag,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~dsmsc_tot_bl_c,
@@ -1894,7 +1952,7 @@ r[[22]] <- summary(fit13b,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibb
 fit14 <- wcls(
     data = df_engag,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cann_importance_bl_c,
@@ -1907,7 +1965,7 @@ r[[23]] <- summary(fit14)$causal_excursion_effect %>% as_tibble(rownames = "term
 fit14b <- wcls(
     data = df_engag,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~high_cann_importance_bl,
@@ -1920,7 +1978,7 @@ r[[24]] <- summary(fit14b)$causal_excursion_effect %>% as_tibble(rownames = "ter
 fit14c <- wcls(
     data = df_engag,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cann_likely_bl_c,
@@ -1933,7 +1991,7 @@ r[[25]] <- summary(fit14c,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibb
 fit14d <- wcls(
     data = df_engag,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cann_conf_bl_c,
@@ -1947,7 +2005,7 @@ r[[26]] <- summary(fit14d,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibb
 fit15 <- wcls(
     data = df_engag,
     id = "id",
-    outcome = "interv_engagement_l",
+    outcome = "engagement_multi",
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~phq2_tot_bl_c,
@@ -2121,15 +2179,18 @@ m2 <- df %>%
   geom_vline(xintercept = 2.565786, color="gray70", linetype="twodash") + 
   geom_vline(xintercept = 7.126414, color="gray70", linetype="twodash") + 
   geom_vline(xintercept = 4.8461, color="gray70", linetype="twodash") + 
-  geom_text(aes(x=2.565786+1, 
-                label="Diff at -1 SD: 0.021", y=0.15), 
-            colour="black", size=8/.pt) +
+  geom_text(aes(x=2.565786+0.95, 
+                label=stringr::str_wrap("\nDiff at -1 SD: 0.021 (95% CI: 0.007, 0.034; p=0.001)",25),
+                y=0.12), 
+            colour="black", size=7/.pt) +
   geom_text(aes(x=4.8461+1, 
-                label="Diff at mean: 0.009", y=0.15), 
-            colour="black", size=8/.pt) +
+                label=stringr::str_wrap("\nDiff at mean: 0.009 (95% CI: -0.001, 0.019; p=0.099)",25),
+                y=0.12), 
+            colour="black", size=7/.pt) +
   geom_text(aes(x=7.126414+1, 
-                label="Diff at +1 SD: -0.003", y=0.15), 
-            colour="black", size=8/.pt) +
+                label=stringr::str_wrap("\nDiff at +1 SD: -0.003 (95% CI: -0.017, 0.011; p=0.846)",25),
+                y=0.12), 
+            colour="black", size=7/.pt) +
   geom_abline(intercept = 0.1835100493, slope=-0.0004387147, linewidth=1, color=colors[1], linetype="dashed") +
   geom_abline(intercept = 0.2176373, slope=-0.005696566, linewidth=1, color=colors[2], linetype="dashed") +
   geom_hline(yintercept = 0, color="gray",) + 
