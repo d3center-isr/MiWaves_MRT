@@ -1049,7 +1049,7 @@ library(gt)
 r <- list()
 
 df$avg_trt <- mean(df$actioni)
-fit_wocov <- wcls(
+fit_wocov <- emee(
     data = df,
     id = "id",
     outcome = "can_yes_no_l",
@@ -1064,7 +1064,7 @@ r[[1]] <- summary(fit_wocov)$causal_excursion_effect %>% as_tibble(rownames = "t
   mutate(model="Main Effect Model (no covars)")
 
 df$avg_trt <- mean(df$actioni)  
-fit_wcov <- wcls(
+fit_wcov <- emee(
     data = df,
     id = "id",
     outcome = "can_yes_no_l",
@@ -1092,7 +1092,8 @@ res <- r %>%
 res_table <- function(res){
     res %>%
       mutate(term = str_replace(term, "\\(Intercept\\)", "Intercept")) %>%
-      rename(Term = term)%>%
+      rename(Term = term,
+             `Log Odds Estimate` = Estimate)%>%
       select(-c(model,model_num)) %>%
       kableExtra::kbl(booktabs = TRUE, 
                       longtable = TRUE,
