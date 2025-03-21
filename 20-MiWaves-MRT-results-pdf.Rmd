@@ -477,7 +477,6 @@ df <- df %>%
 
 r <- list()
 
-df$avg_trt <- mean(df$actioni)
 fit_wocov <- wcls(
     data = df,
     id = "id",
@@ -485,14 +484,12 @@ fit_wocov <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~1,
-    numerator_prob = "avg_trt"
+    control_formula = ~1
 )
 
 r[[1]] <- summary(fit_wocov)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Main Effect Model (no covars)")
 
-df$avg_trt <- mean(df$actioni)  
 fit_wcov <- wcls(
     data = df,
     id = "id",
@@ -500,14 +497,12 @@ fit_wcov <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~ cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~ cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[2]] <- summary(fit_wcov)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Main Effect Model (with covars)")
 
-df$avg_trt <- mean(df$actioni)  
 fit1 <- wcls(
     data = df,
     id = "id",
@@ -515,8 +510,7 @@ fit1 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~timeofday,
-    control_formula = ~ cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~ cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[3]] <- summary(fit1)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -528,7 +522,6 @@ df_temp <- df %>%
   filter(!(message_type %in% c("B","C"))) %>%
   mutate(interact_A_message = ifelse(actioni==0,0,1))
 
-df_temp$avg_trt <- mean(df_temp$actioni)  
 fit2 <- wcls(
     data = df_temp,
     id = "id",
@@ -536,8 +529,7 @@ fit2 <- wcls(
     treatment = "interact_A_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[4]] <- summary(fit2)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -549,7 +541,6 @@ df_temp <- df %>%
   filter(!(message_type %in% c("A","C"))) %>%
   mutate(interact_B_message = ifelse(actioni==0,0,1))
 
-df_temp$avg_trt <- mean(df_temp$actioni)  
 fit2b <- wcls(
     data = df_temp,
     id = "id",
@@ -557,8 +548,7 @@ fit2b <- wcls(
     treatment = "interact_B_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[5]] <- summary(fit2b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -571,7 +561,6 @@ df_temp <- df %>%
   filter(!(message_type %in% c("A","B"))) %>%
   mutate(interact_C_message = ifelse(actioni==0,0,1))
 
-df_temp$avg_trt <- mean(df_temp$actioni)  
 fit2c <- wcls(
     data = df_temp,
     id = "id",
@@ -579,15 +568,13 @@ fit2c <- wcls(
     treatment = "interact_C_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[6]] <- summary(fit2c)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 2.3")
 
 df_temp <- df %>% filter(!is.na(prop_awakeuse_prior)) 
-df_temp$avg_trt <- mean(df_temp$actioni)  
 fit3 <- wcls(
     data = df_temp,
     id = "id",
@@ -595,14 +582,12 @@ fit3 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~prop_awakeuse_prior_c,
-    control_formula = ~prop_awakeuse_prior_c + cov_interv_engag_24hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~prop_awakeuse_prior_c + cov_interv_engag_24hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[7]] <- summary(fit3)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 3")
 
-df$avg_trt <- mean(df$actioni)  
 fit3b <- wcls(
     data = df,
     id = "id",
@@ -610,14 +595,12 @@ fit3b <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cov_prop_awakeuse_48hrs_c,
-    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[8]] <- summary(fit3b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 3.2")
 
-df$avg_trt <- mean(df$actioni)  
 fit4 <- wcls(
     data = df,
     id = "id",
@@ -625,14 +608,12 @@ fit4 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~wks_since_interv_start,
-    control_formula = ~wks_since_interv_start + cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~wks_since_interv_start + cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[9]] <- summary(fit4)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 4")
 
-df$avg_trt <- mean(df$actioni)  
 fit4b <- wcls(
     data = df,
     id = "id",
@@ -640,14 +621,12 @@ fit4b <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~after_day15,
-    control_formula = ~after_day15 + cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~after_day15 + cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[10]] <- summary(fit4b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 4.2")
 
-df$avg_trt <- mean(df$actioni)  
 fit5 <- wcls(
     data = df,
     id = "id",
@@ -655,15 +634,14 @@ fit5 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~week_day_binary,
-    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[11]] <- summary(fit5)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 5")
 
 df_temp <- df %>% filter(!is.na(prior_interv_engag)) 
-df_temp$avg_trt <- mean(df_temp$actioni)  
+
 fit6 <- wcls(
     data = df_temp,
     id = "id",
@@ -671,14 +649,12 @@ fit6 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~prior_interv_engag_c,
-    control_formula = ~cov_prop_awakeuse_48hrs_c + prior_interv_engag_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~cov_prop_awakeuse_48hrs_c + prior_interv_engag_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[12]] <- summary(fit6)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 6")
 
-df$avg_trt <- mean(df$actioni)  
 fit6b <- wcls(
     data = df,
     id = "id",
@@ -686,15 +662,13 @@ fit6b <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cov_interv_engag_24hrs_c,
-    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[13]] <- summary(fit6b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 6.2")
 
 df_temp <- df %>% filter(!is.na(prior_sent_message)) 
-df_temp$avg_trt <- mean(df_temp$actioni)  
 fit7 <- wcls(
     data = df_temp,
     id = "id",
@@ -702,15 +676,14 @@ fit7 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~prior_sent_message,
-    control_formula = ~prior_sent_message + cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~prior_sent_message + cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[14]] <- summary(fit7)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 7")
 
 df_temp <- df %>% filter(!is.na(prior_sent_messages_48hrs)) 
-df_temp$avg_trt <- mean(df_temp$actioni)  
+
 fit7b <- wcls(
     data = df_temp,
     id = "id",
@@ -718,8 +691,7 @@ fit7b <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~prior_sent_messages_48hrs_c,
-    control_formula = ~prior_sent_messages_48hrs_c + cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~prior_sent_messages_48hrs_c + cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[15]] <- summary(fit7b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -730,7 +702,7 @@ df_temp <- df %>%
   # restrict to short message and no message
   filter(message_length!="Long") %>%
   mutate(short_message = ifelse(actioni==0,0,1)) 
-df_temp$avg_trt <- mean(df_temp$actioni) 
+
 fit8 <- wcls(
     data = df_temp,
     id = "id",
@@ -738,8 +710,7 @@ fit8 <- wcls(
     treatment = "short_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[16]] <- summary(fit8)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -751,7 +722,7 @@ df_temp <- df %>%
   # restrict to long message and no message
   filter(message_length!="Short") %>%
   mutate(long_message = ifelse(actioni==0,0,1))
-df_temp$avg_trt <- mean(df_temp$actioni) 
+
 fit8b <- wcls(
     data = df_temp,
     id = "id",
@@ -759,15 +730,12 @@ fit8b <- wcls(
     treatment = "long_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[17]] <- summary(fit8b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 8.2")
 
- 
-df$avg_trt <- mean(df$actioni) 
 fit9 <- wcls(
     data = df,
     id = "id",
@@ -775,14 +743,12 @@ fit9 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~male_sex,
-    control_formula = ~male_sex + cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~male_sex + cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[18]] <- summary(fit9)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 9")
 
-df$avg_trt <- mean(df$actioni) 
 fit10 <- wcls(
     data = df,
     id = "id",
@@ -790,14 +756,12 @@ fit10 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~white_race,
-    control_formula = ~white_race + cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~white_race + cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[19]] <- summary(fit10)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 10")
 
-df$avg_trt <- mean(df$actioni) 
 fit11 <- wcls(
     data = df,
     id = "id",
@@ -805,14 +769,12 @@ fit11 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~hispanic_ethn,
-    control_formula = ~hispanic_ethn + cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~hispanic_ethn + cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[20]] <- summary(fit11)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 11")
 
-df$avg_trt <- mean(df$actioni) 
 fit12 <- wcls(
     data = df,
     id = "id",
@@ -820,14 +782,12 @@ fit12 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~canndays_bl_c,
-    control_formula = ~ canndays_bl_c + cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~ canndays_bl_c + cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[21]] <- summary(fit12)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 12")
 
-df$avg_trt <- mean(df$actioni) 
 fit12b <- wcls(
     data = df,
     id = "id",
@@ -835,15 +795,13 @@ fit12b <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~dsmsc_tot_bl_c,
-    control_formula = ~dsmsc_tot_bl_c + cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~dsmsc_tot_bl_c + cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[22]] <- summary(fit12b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 12.2")
 
 # b1 + b3*(4.8) = 0.009 + ((-0.005) * 4.8)
-df$avg_trt <- mean(df$actioni) 
 fit13_can <- wcls(
     data = df,
     id = "id",
@@ -851,14 +809,12 @@ fit13_can <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cann_importance_bl_c,
-    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[23]] <- summary(fit13_can,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 13")
 
-df$avg_trt <- mean(df$actioni) 
 fit13b <- wcls(
     data = df,
     id = "id",
@@ -866,14 +822,12 @@ fit13b <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~high_cann_importance_bl,
-    control_formula = ~high_cann_importance_bl + cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~high_cann_importance_bl + cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[24]] <- summary(fit13b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 13.2")
 
-df$avg_trt <- mean(df$actioni) 
 fit13c <- wcls(
     data = df,
     id = "id",
@@ -881,14 +835,12 @@ fit13c <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cann_likely_bl_c,
-    control_formula = ~cann_likely_bl_c + cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~cann_likely_bl_c + cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[25]] <- summary(fit13c)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 13.3")
 
-df$avg_trt <- mean(df$actioni) 
 fit13d <- wcls(
     data = df,
     id = "id",
@@ -896,15 +848,13 @@ fit13d <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cann_conf_bl_c,
-    control_formula = ~cann_conf_bl_c + cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~cann_conf_bl_c + cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[26]] <- summary(fit13d)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 13.4")
 
 df_temp <- df %>% filter(wks_since_interv_start==1)
-df_temp$avg_trt <- mean(df_temp$actioni) 
 fit13e <- wcls(
     data = df_temp,
     id = "id",
@@ -912,15 +862,13 @@ fit13e <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cann_importance_bl_c,
-    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[27]] <- summary(fit13e,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 13.5")
 
 df_temp <- df %>% filter(wks_since_interv_start==2)
-df_temp$avg_trt <- mean(df_temp$actioni) 
 fit13f <- wcls(
     data = df_temp,
     id = "id",
@@ -928,15 +876,13 @@ fit13f <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cann_importance_bl_c,
-    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[28]] <- summary(fit13f,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 13.6")
 
 df_temp <- df %>% filter(wks_since_interv_start==3)
-df_temp$avg_trt <- mean(df_temp$actioni) 
 fit13g <- wcls(
     data = df_temp,
     id = "id",
@@ -944,15 +890,13 @@ fit13g <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cann_importance_bl_c,
-    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[29]] <- summary(fit13g,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 13.7")
 
 df_temp <- df %>% filter(wks_since_interv_start==4)
-df_temp$avg_trt <- mean(df_temp$actioni) 
 fit13h <- wcls(
     data = df_temp,
     id = "id",
@@ -960,14 +904,12 @@ fit13h <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cann_importance_bl_c,
-    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[30]] <- summary(fit13h,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 13.8")
 
-df$avg_trt <- mean(df$actioni) 
 fit14 <- wcls(
     data = df,
     id = "id",
@@ -975,8 +917,7 @@ fit14 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~phq2_tot_bl_c,
-    control_formula = ~phq2_tot_bl_c + cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~phq2_tot_bl_c + cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[31]] <- summary(fit14)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1048,7 +989,6 @@ library(gt)
 
 r <- list()
 
-df$avg_trt <- mean(df$actioni)
 fit_wocov <- emee(
     data = df,
     id = "id",
@@ -1056,14 +996,12 @@ fit_wocov <- emee(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~1,
-    numerator_prob = "avg_trt"
+    control_formula = ~1
 )
 
 r[[1]] <- summary(fit_wocov)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Main Effect Model (no covars)")
 
-df$avg_trt <- mean(df$actioni)  
 fit_wcov <- emee(
     data = df,
     id = "id",
@@ -1071,8 +1009,7 @@ fit_wcov <- emee(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~ cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~ cov_prop_awakeuse_48hrs_c + cov_interv_engag_24hrs_c  + timeofday + week_day_binary + cann_importance_bl_c + cannhours_bl_c + cannwake_bl_c
 )
 
 r[[2]] <- summary(fit_wcov)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1309,7 +1246,6 @@ library(gt)
 
 r <- list()
 
-df$avg_trt <- mean(df$actioni) 
 fit_wocov <- wcls(
     data = df,
     id = "id",
@@ -1317,14 +1253,12 @@ fit_wocov <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~1,
-    numerator_prob = "avg_trt"
+    control_formula = ~1
 )
 
 r[[1]] <- summary(fit_wocov)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Main Effect Model (no covars)")
-
-df$avg_trt <- mean(df$actioni)   
+ 
 fit_wcov <- wcls(
     data = df,
     id = "id",
@@ -1332,14 +1266,12 @@ fit_wcov <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~ timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~ timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[2]] <- summary(fit_wcov)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Main Effect Model (with covars)")
 
-df$avg_trt <- mean(df$actioni) 
 fit1 <- wcls(
     data = df,
     id = "id",
@@ -1347,8 +1279,7 @@ fit1 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~timeofday,
-    control_formula = ~ timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~ timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[3]] <- summary(fit1)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1356,7 +1287,6 @@ r[[3]] <- summary(fit1)$causal_excursion_effect %>% as_tibble(rownames = "term")
 
 
 df_temp <- df %>% filter(!is.na(prior_interv_engag)) 
-df_temp$avg_trt <- mean(df_temp$actioni) 
 fit2 <- wcls(
     data = df_temp,
     id = "id",
@@ -1364,14 +1294,12 @@ fit2 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~prior_interv_engag_c,
-    control_formula = ~timeofday + week_day_binary + prior_interv_engag_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~timeofday + week_day_binary + prior_interv_engag_c + cov_humtch_binary_48hrs_c
 )
 
 r[[4]] <- summary(fit2)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 2")
 
-df$avg_trt <- mean(df$actioni) 
 fit2b <- wcls(
     data = df,
     id = "id",
@@ -1379,15 +1307,13 @@ fit2b <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cov_interv_engag_72hrs_c,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[5]] <- summary(fit2b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 2.2")
 
 df_temp <- df %>% filter(!is.na(prop_awakeuse_prior)) 
-df_temp$avg_trt <- mean(df_temp$actioni)
 fit3 <- wcls(
     data = df_temp,
     id = "id",
@@ -1395,14 +1321,12 @@ fit3 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~prop_awakeuse_prior_c,
-    control_formula = ~prop_awakeuse_prior_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~prop_awakeuse_prior_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[6]] <- summary(fit3)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 3")
 
-df$avg_trt <- mean(df$actioni) 
 fit3b <- wcls(
     data = df,
     id = "id",
@@ -1410,14 +1334,12 @@ fit3b <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cov_prop_awakeuse_48hrs_c,
-    control_formula = ~cov_prop_awakeuse_48hrs_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~cov_prop_awakeuse_48hrs_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[7]] <- summary(fit3b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 3.2")
 
-df$avg_trt <- mean(df$actioni) 
 fit4 <- wcls(
     data = df,
     id = "id",
@@ -1425,14 +1347,12 @@ fit4 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~wks_since_interv_start,
-    control_formula = ~wks_since_interv_start + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~wks_since_interv_start + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[8]] <- summary(fit4)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 4")
 
-df$avg_trt <- mean(df$actioni) 
 fit5 <- wcls(
     data = df,
     id = "id",
@@ -1440,15 +1360,13 @@ fit5 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~week_day_binary,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[9]] <- summary(fit5)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 5")
 
 df_temp <- df %>% filter(!is.na(prior_sent_message)) 
-df_temp$avg_trt <- mean(df_temp$actioni) 
 fit6 <- wcls(
     data = df_temp,
     id = "id",
@@ -1456,15 +1374,13 @@ fit6 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~prior_sent_message,
-    control_formula = ~prior_sent_message + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~prior_sent_message + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[10]] <- summary(fit7)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 6")
 
 df_temp <- df %>% filter(!is.na(prior_sent_messages_48hrs)) 
-df_temp$avg_trt <- mean(df_temp$actioni) 
 fit6b <- wcls(
     data = df_temp,
     id = "id",
@@ -1472,8 +1388,7 @@ fit6b <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~prior_sent_messages_48hrs_c,
-    control_formula = ~prior_sent_messages_48hrs_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~prior_sent_messages_48hrs_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[11]] <- summary(fit6b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1485,7 +1400,6 @@ df_temp <- df %>%
   # restrict to interaction A type message and no message
   filter(!(message_type %in% c("B","C"))) %>%
   mutate(interact_A_message = ifelse(actioni==0,0,1))
-df_temp$avg_trt <- mean(df_temp$actioni) 
 fit7 <- wcls(
     data = df_temp,
     id = "id",
@@ -1493,8 +1407,7 @@ fit7 <- wcls(
     treatment = "interact_A_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[12]] <- summary(fit7)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1505,7 +1418,6 @@ df_temp <- df %>%
   # restrict to interaction B type message and no message
   filter(!(message_type %in% c("A","C"))) %>%
   mutate(interact_B_message = ifelse(actioni==0,0,1))
-df_temp$avg_trt <- mean(df_temp$actioni) 
 fit7b <- wcls(
     data = df_temp,
     id = "id",
@@ -1513,8 +1425,7 @@ fit7b <- wcls(
     treatment = "interact_B_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[13]] <- summary(fit7b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1526,7 +1437,6 @@ df_temp <- df %>%
   # restrict to interaction C type message and no message
   filter(!(message_type %in% c("A","B"))) %>%
   mutate(interact_C_message = ifelse(actioni==0,0,1))
-df_temp$avg_trt <- mean(df_temp$actioni) 
 fit7c <- wcls(
     data = df_temp,
     id = "id",
@@ -1534,8 +1444,7 @@ fit7c <- wcls(
     treatment = "interact_C_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[14]] <- summary(fit7c)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1546,7 +1455,6 @@ df_temp <- df %>%
   # restrict to short message and no message
   filter(message_length!="Long") %>%
   mutate(short_message = ifelse(actioni==0,0,1))
-df_temp$avg_trt <- mean(df_temp$actioni) 
 fit8 <- wcls(
     data = df_temp,
     id = "id",
@@ -1554,8 +1462,7 @@ fit8 <- wcls(
     treatment = "short_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[15]] <- summary(fit8)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1567,7 +1474,6 @@ df_temp <- df %>%
   # restrict to long message and no message
   filter(message_length!="Short") %>%
   mutate(long_message = ifelse(actioni==0,0,1))
-df_temp$avg_trt <- mean(df_temp$actioni) 
 fit8b <- wcls(
     data = df_temp,
     id = "id",
@@ -1575,14 +1481,12 @@ fit8b <- wcls(
     treatment = "long_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[16]] <- summary(fit8b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 8.2")
 
-df$avg_trt <- mean(df$actioni) 
 fit9 <- wcls(
     data = df,
     id = "id",
@@ -1590,14 +1494,12 @@ fit9 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cov_humtch_binary_48hrs_c,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[17]] <- summary(fit9)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 9")
 
-df$avg_trt <- mean(df$actioni) 
 fit10 <- wcls(
     data = df,
     id = "id",
@@ -1605,14 +1507,12 @@ fit10 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~male_sex,
-    control_formula = ~male_sex + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~male_sex + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[18]] <- summary(fit10)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 10")
 
-df$avg_trt <- mean(df$actioni) 
 fit11 <- wcls(
     data = df,
     id = "id",
@@ -1620,14 +1520,12 @@ fit11 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~white_race,
-    control_formula = ~white_race + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~white_race + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[19]] <- summary(fit11)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 11")
 
-df$avg_trt <- mean(df$actioni) 
 fit12 <- wcls(
     data = df,
     id = "id",
@@ -1635,14 +1533,12 @@ fit12 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~hispanic_ethn,
-    control_formula = ~hispanic_ethn + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~hispanic_ethn + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[20]] <- summary(fit12)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 12")
 
-df$avg_trt <- mean(df$actioni) 
 fit13 <- wcls(
     data = df,
     id = "id",
@@ -1650,14 +1546,12 @@ fit13 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~canndays_bl_c,
-    control_formula = ~ canndays_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~ canndays_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[21]] <- summary(fit13)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 13")
 
-df$avg_trt <- mean(df$actioni) 
 fit13b <- wcls(
     data = df,
     id = "id",
@@ -1665,14 +1559,12 @@ fit13b <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~dsmsc_tot_bl_c,
-    control_formula = ~dsmsc_tot_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~dsmsc_tot_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[22]] <- summary(fit13b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 13.2")
 
-df$avg_trt <- mean(df$actioni) 
 fit14 <- wcls(
     data = df,
     id = "id",
@@ -1680,14 +1572,12 @@ fit14 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cann_importance_bl_c,
-    control_formula = ~cann_importance_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~cann_importance_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[23]] <- summary(fit14)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 14")
 
-df$avg_trt <- mean(df$actioni) 
 fit14b <- wcls(
     data = df,
     id = "id",
@@ -1695,14 +1585,12 @@ fit14b <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~high_cann_importance_bl,
-    control_formula = ~high_cann_importance_bl + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~high_cann_importance_bl + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[24]] <- summary(fit14b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 14.2")
 
-df$avg_trt <- mean(df$actioni) 
 fit14c <- wcls(
     data = df,
     id = "id",
@@ -1710,14 +1598,12 @@ fit14c <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cann_likely_bl_c,
-    control_formula = ~cann_likely_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~cann_likely_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[25]] <- summary(fit14c,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 14.3")
 
-df$avg_trt <- mean(df$actioni) 
 fit14d <- wcls(
     data = df,
     id = "id",
@@ -1725,14 +1611,12 @@ fit14d <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cann_conf_bl_c,
-    control_formula = ~cann_conf_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~cann_conf_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[26]] <- summary(fit14d, lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 14.4")
 
-df$avg_trt <- mean(df$actioni) 
 fit15 <- wcls(
     data = df,
     id = "id",
@@ -1740,8 +1624,7 @@ fit15 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~phq2_tot_bl_c,
-    control_formula = ~phq2_tot_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~phq2_tot_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[27]] <- summary(fit15)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -1825,7 +1708,6 @@ df_engag <- df_engag %>%
 
 r <- list()
 
-df_engag$avg_trt <- mean(df_engag$actioni) 
 fit_wocov_b <- wcls(
     data = df_engag,
     id = "id",
@@ -1833,15 +1715,13 @@ fit_wocov_b <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~1,
-    numerator_prob = "avg_trt"
+    control_formula = ~1
 )
 
 
 r[[1]] <- summary(fit_wocov_b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Main Effect Model (no covars)")
 
-df_engag$avg_trt <- mean(df_engag$actioni) 
 fit_wcov_b <- wcls(
     data = df_engag,
     id = "id",
@@ -1849,14 +1729,12 @@ fit_wcov_b <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~ timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~ timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[2]] <- summary(fit_wcov_b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Main Effect Model (with covars)")
 
-df_engag$avg_trt <- mean(df_engag$actioni) 
 fit1 <- wcls(
     data = df_engag,
     id = "id",
@@ -1864,15 +1742,13 @@ fit1 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~timeofday,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[3]] <- summary(fit1)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 1")
 
 df_engag_temp <- df_engag %>% filter(!is.na(prior_interv_engag)) 
-df_engag_temp$avg_trt <- mean(df_engag_temp$actioni) 
 fit2 <- wcls(
     data = df_engag_temp,
     id = "id",
@@ -1880,14 +1756,12 @@ fit2 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~prior_interv_engag_c,
-    control_formula = ~timeofday + week_day_binary + prior_interv_engag_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~timeofday + week_day_binary + prior_interv_engag_c + cov_humtch_binary_48hrs_c
 )
 
 r[[4]] <- summary(fit2)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 2")
 
-df_engag$avg_trt <- mean(df_engag$actioni)
 fit2b <- wcls(
     data = df_engag,
     id = "id",
@@ -1895,15 +1769,13 @@ fit2b <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cov_interv_engag_72hrs_c,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[5]] <- summary(fit2b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 2.2")
 
 df_engag_temp <- df_engag %>% filter(!is.na(prop_awakeuse_prior))
-df_engag_temp$avg_trt <- mean(df_engag_temp$actioni) 
 fit3 <- wcls(
     data = df_engag_temp,
     id = "id",
@@ -1911,15 +1783,13 @@ fit3 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~prop_awakeuse_prior_c,
-    control_formula = ~prop_awakeuse_prior_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~prop_awakeuse_prior_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[6]] <- summary(fit3)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 3")
 
 df_engag_temp <- df_engag %>% filter(!is.na(cov_prop_awakeuse_48hrs))
-df_engag_temp$avg_trt <- mean(df_engag_temp$actioni) 
 fit3b <- wcls(
     data = df_engag_temp,
     id = "id",
@@ -1927,14 +1797,12 @@ fit3b <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cov_prop_awakeuse_48hrs_c,
-    control_formula = ~cov_prop_awakeuse_48hrs_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~cov_prop_awakeuse_48hrs_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[7]] <- summary(fit3b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 3.2")
 
-df_engag$avg_trt <- mean(df_engag$actioni)
 fit4 <- wcls(
     data = df_engag,
     id = "id",
@@ -1942,14 +1810,12 @@ fit4 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~wks_since_interv_start,
-    control_formula = ~wks_since_interv_start + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~wks_since_interv_start + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[8]] <- summary(fit4)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 4")
 
-df_engag$avg_trt <- mean(df_engag$actioni)
 fit5 <- wcls(
     data = df_engag,
     id = "id",
@@ -1957,15 +1823,13 @@ fit5 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~week_day_binary,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[9]] <- summary(fit5)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 5")
 
 df_engag_temp <- df_engag %>% filter(!is.na(prior_sent_message))
-df_engag_temp$avg_trt <- mean(df_engag_temp$actioni) 
 fit6 <- wcls(
     data = df_engag_temp,
     id = "id",
@@ -1973,15 +1837,13 @@ fit6 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~prior_sent_message,
-    control_formula = ~prior_sent_message + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~prior_sent_message + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[10]] <- summary(fit7)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 6")
 
 df_engag_temp <- df_engag %>% filter(!is.na(prior_sent_messages_48hrs))
-df_engag_temp$avg_trt <- mean(df_engag_temp$actioni) 
 fit6b <- wcls(
     data = df_engag_temp,
     id = "id",
@@ -1989,20 +1851,17 @@ fit6b <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~prior_sent_messages_48hrs_c,
-    control_formula = ~prior_sent_messages_48hrs_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~prior_sent_messages_48hrs_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[11]] <- summary(fit6b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 6.2")
-
 
 # type of interaction (A, B or C) – categorical (A=0, B=1, C=2)
 df_engag_temp <- df_engag %>%
   # restrict to interaction A type message and no message
   filter(!(message_type %in% c("B","C"))) %>%
   mutate(interact_A_message = ifelse(actioni==0,0,1))
-df_engag_temp$avg_trt <- mean(df_engag_temp$actioni) 
 fit7 <- wcls(
     data = df_engag_temp,
     id = "id",
@@ -2010,8 +1869,7 @@ fit7 <- wcls(
     treatment = "interact_A_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[12]] <- summary(fit7)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -2022,7 +1880,6 @@ df_engag_temp <- df_engag %>%
   # restrict to interaction B type message and no message
   filter(!(message_type %in% c("A","C"))) %>%
   mutate(interact_B_message = ifelse(actioni==0,0,1))
-df_engag_temp$avg_trt <- mean(df_engag_temp$actioni) 
 fit7b <- wcls(
     data = df_engag_temp,
     id = "id",
@@ -2030,8 +1887,7 @@ fit7b <- wcls(
     treatment = "interact_B_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[13]] <- summary(fit7b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -2043,7 +1899,6 @@ df_engag_temp <- df_engag %>%
   # restrict to interaction C type message and no message
   filter(!(message_type %in% c("A","B"))) %>%
   mutate(interact_C_message = ifelse(actioni==0,0,1))
-df_engag_temp$avg_trt <- mean(df_engag_temp$actioni) 
 fit7c <- wcls(
     data = df_engag_temp,
     id = "id",
@@ -2051,8 +1906,7 @@ fit7c <- wcls(
     treatment = "interact_C_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[14]] <- summary(fit7c)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -2063,7 +1917,6 @@ df_engag_temp <- df_engag %>%
   # restrict to short message and no message
   filter(message_length!="Long") %>%
   mutate(short_message = ifelse(actioni==0,0,1))
-df_engag_temp$avg_trt <- mean(df_engag_temp$actioni) 
 fit8 <- wcls(
     data = df_engag_temp,
     id = "id",
@@ -2071,8 +1924,7 @@ fit8 <- wcls(
     treatment = "short_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[15]] <- summary(fit8)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -2084,7 +1936,6 @@ df_engag_temp <- df_engag %>%
   # restrict to long message and no message
   filter(message_length!="Short") %>%
   mutate(long_message = ifelse(actioni==0,0,1))
-df_engag_temp$avg_trt <- mean(df_engag_temp$actioni) 
 fit8b <- wcls(
     data = df_engag_temp,
     id = "id",
@@ -2092,14 +1943,12 @@ fit8b <- wcls(
     treatment = "long_message",
     rand_prob = "probi",
     moderator_formula = ~1,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[16]] <- summary(fit8b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 8.2")
 
-df_engag$avg_trt <- mean(df_engag$actioni) 
 fit9 <- wcls(
     data = df_engag,
     id = "id",
@@ -2107,14 +1956,12 @@ fit9 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cov_humtch_binary_48hrs_c,
-    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[17]] <- summary(fit9)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 9")
 
-df_engag$avg_trt <- mean(df_engag$actioni) 
 fit10 <- wcls(
     data = df_engag,
     id = "id",
@@ -2122,14 +1969,12 @@ fit10 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~male_sex,
-    control_formula = ~male_sex + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~male_sex + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[18]] <- summary(fit10)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 10")
 
-df_engag$avg_trt <- mean(df_engag$actioni) 
 fit11 <- wcls(
     data = df_engag,
     id = "id",
@@ -2137,14 +1982,12 @@ fit11 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~white_race,
-    control_formula = ~white_race + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~white_race + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[19]] <- summary(fit11)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 11")
 
-df_engag$avg_trt <- mean(df_engag$actioni) 
 fit12 <- wcls(
     data = df_engag,
     id = "id",
@@ -2152,14 +1995,12 @@ fit12 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~hispanic_ethn,
-    control_formula = ~hispanic_ethn + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~hispanic_ethn + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[20]] <- summary(fit12)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 12")
 
-df_engag$avg_trt <- mean(df_engag$actioni) 
 fit13 <- wcls(
     data = df_engag,
     id = "id",
@@ -2167,14 +2008,12 @@ fit13 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~canndays_bl_c,
-    control_formula = ~ canndays_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~ canndays_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[21]] <- summary(fit13)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 13")
 
-df_engag$avg_trt <- mean(df_engag$actioni) 
 fit13b <- wcls(
     data = df_engag,
     id = "id",
@@ -2182,14 +2021,12 @@ fit13b <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~dsmsc_tot_bl_c,
-    control_formula = ~dsmsc_tot_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~dsmsc_tot_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[22]] <- summary(fit13b,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 13.2")
 
-df_engag$avg_trt <- mean(df_engag$actioni) 
 fit14 <- wcls(
     data = df_engag,
     id = "id",
@@ -2197,14 +2034,12 @@ fit14 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cann_importance_bl_c,
-    control_formula = ~cann_importance_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~cann_importance_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[23]] <- summary(fit14)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 14")
 
-df_engag$avg_trt <- mean(df_engag$actioni) 
 fit14b <- wcls(
     data = df_engag,
     id = "id",
@@ -2212,14 +2047,12 @@ fit14b <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~high_cann_importance_bl,
-    control_formula = ~high_cann_importance_bl + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~high_cann_importance_bl + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[24]] <- summary(fit14b)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 14.2")
 
-df_engag$avg_trt <- mean(df_engag$actioni) 
 fit14c <- wcls(
     data = df_engag,
     id = "id",
@@ -2227,14 +2060,12 @@ fit14c <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cann_likely_bl_c,
-    control_formula = ~cann_likely_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~cann_likely_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[25]] <- summary(fit14c,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 14.3")
 
-df_engag$avg_trt <- mean(df_engag$actioni) 
 fit14d <- wcls(
     data = df_engag,
     id = "id",
@@ -2242,14 +2073,12 @@ fit14d <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~cann_conf_bl_c,
-    control_formula = ~cann_conf_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~cann_conf_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[26]] <- summary(fit14d,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
   mutate(model="Moderation Effect Model 14.4")
 
-df_engag$avg_trt <- mean(df_engag$actioni) 
 fit15 <- wcls(
     data = df_engag,
     id = "id",
@@ -2257,8 +2086,7 @@ fit15 <- wcls(
     treatment = "actioni",
     rand_prob = "probi",
     moderator_formula = ~phq2_tot_bl_c,
-    control_formula = ~phq2_tot_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c,
-    numerator_prob = "avg_trt"
+    control_formula = ~phq2_tot_bl_c + timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
 )
 
 r[[27]] <- summary(fit15,lincomb = c(1, 1))$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
@@ -2279,6 +2107,183 @@ res_table <- function(res){
     res %>%
       mutate(term = str_replace(term, "\\(Intercept\\)", "Intercept")) %>%
       rename(Term = term)%>%
+      select(-c(model,model_num)) %>%
+      kableExtra::kbl(booktabs = TRUE, 
+                      longtable = TRUE,
+                      digits=3,
+                      format = "latex",
+                      caption = NULL) %>%
+      kableExtra::kable_styling(
+        latex_options = c("striped", "hold_position", "repeat_header"),
+        font_size = 10
+        #full_width = TRUE
+      ) %>%
+      kableExtra::pack_rows(index = table(fct_inorder(res$model))) %>%
+      kableExtra::column_spec(1, width = "6cm") %>%
+      kableExtra::column_spec(7, width = "0.5cm") %>%
+      kableExtra::column_spec(8, width = "0.5cm") %>%
+      kableExtra::footnote(
+        general = "prior intervention engagement, and prior human-touch engagement.",
+        general_title = "", footnote_as_chunk = T
+      )%>%
+      kableExtra::footnote(
+        general = "Model with covariates adjusts for the following: time of day, day of week,", general_title = "", footnote_as_chunk = T
+      ) %>%
+      kableExtra::footnote(
+        general = "Notes: Standard errors are not yet adjusted to account for RL uncertainty.", general_title = "", footnote_as_chunk = T
+      ) 
+}
+
+res_table(res)
+```
+\newpage
+
+Additionally, let us examine the causal excursion effect of prompting with a message (vs. no message) for the binary version of proximal engagement (1=Yes engaged with the app, 0=No app engagement). Note that the binary proximal engagement outcome uses the variable *engagement_binary*, which is already adjusted to reflect the next decision point. 
+
+First, we will perform this analysis for the analytic sample which removes decision points without a completed EMA.
+
+```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE}
+library(tidyverse)
+library(dplyr)
+library(lubridate)
+library(knitr)
+library(ggplot2)
+library(kableExtra)
+library(MRTAnalysis)
+library(gt)
+
+r <- list()
+
+fit_wocov <- emee(
+    data = df,
+    id = "id",
+    outcome = "engagement_binary",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~1,
+    control_formula = ~1
+)
+
+r[[1]] <- summary(fit_wocov)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Main Effect Model (no covars)")
+
+fit_wcov <- emee(
+    data = df,
+    id = "id",
+    outcome = "engagement_binary",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~1,
+    control_formula = ~ timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
+)
+
+r[[2]] <- summary(fit_wcov)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Main Effect Model (with covars)")
+
+res <- r %>% 
+  map_df(bind_rows) %>% 
+  select(model, everything()) %>%
+  dplyr::mutate(model_num = gsub("Moderation Effect Model ","",model),
+         model_num = ifelse(model=="Main Effect Model (no covars)","0",
+                            ifelse(model=="Main Effect Model (with covars)","0.5",model_num)),
+         model_num = as.numeric(model_num)
+  )%>%
+  dplyr::arrange(model_num) 
+
+# create table with output
+res_table <- function(res){
+    res %>%
+      mutate(term = str_replace(term, "\\(Intercept\\)", "Intercept")) %>%
+      rename(Term = term,
+             `Log Odds Estimate` = Estimate)%>%
+      select(-c(model,model_num)) %>%
+      kableExtra::kbl(booktabs = TRUE, 
+                      longtable = TRUE,
+                      digits=3,
+                      format = "latex",
+                      caption = NULL) %>%
+      kableExtra::kable_styling(
+        latex_options = c("striped", "hold_position", "repeat_header"),
+        font_size = 10
+        #full_width = TRUE
+      ) %>%
+      kableExtra::pack_rows(index = table(fct_inorder(res$model))) %>%
+      kableExtra::column_spec(1, width = "6cm") %>%
+      kableExtra::column_spec(7, width = "0.5cm") %>%
+      kableExtra::column_spec(8, width = "0.5cm") %>%
+      kableExtra::footnote(
+        general = "prior intervention engagement, and prior human-touch engagement.",
+        general_title = "", footnote_as_chunk = T
+      )%>%
+      kableExtra::footnote(
+        general = "Model with covariates adjusts for the following: time of day, day of week,", general_title = "", footnote_as_chunk = T
+      ) %>%
+      kableExtra::footnote(
+        general = "Notes: Standard errors are not yet adjusted to account for RL uncertainty.", general_title = "", footnote_as_chunk = T
+      ) 
+}
+
+res_table(res)
+
+```
+
+Second, we will perform this analysis for the analytic sample which does *not* additionally remove decision points without a completed EMA.
+
+
+```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE}
+library(tidyverse)
+library(dplyr)
+library(lubridate)
+library(knitr)
+library(ggplot2)
+library(kableExtra)
+library(MRTAnalysis)
+library(gt)
+
+r <- list()
+
+fit_wocov <- emee(
+    data = df_engag,
+    id = "id",
+    outcome = "engagement_binary",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~1,
+    control_formula = ~1
+)
+
+r[[1]] <- summary(fit_wocov)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Main Effect Model (no covars)")
+
+fit_wcov <- emee(
+    data = df_engag,
+    id = "id",
+    outcome = "engagement_binary",
+    treatment = "actioni",
+    rand_prob = "probi",
+    moderator_formula = ~1,
+    control_formula = ~ timeofday + week_day_binary + cov_interv_engag_72hrs_c + cov_humtch_binary_48hrs_c
+)
+
+r[[2]] <- summary(fit_wcov)$causal_excursion_effect %>% as_tibble(rownames = "term") %>%
+  mutate(model="Main Effect Model (with covars)")
+
+res <- r %>% 
+  map_df(bind_rows) %>% 
+  select(model, everything()) %>%
+  dplyr::mutate(model_num = gsub("Moderation Effect Model ","",model),
+         model_num = ifelse(model=="Main Effect Model (no covars)","0",
+                            ifelse(model=="Main Effect Model (with covars)","0.5",model_num)),
+         model_num = as.numeric(model_num)
+  )%>%
+  dplyr::arrange(model_num) 
+
+# create table with output
+res_table <- function(res){
+    res %>%
+      mutate(term = str_replace(term, "\\(Intercept\\)", "Intercept")) %>%
+      rename(Term = term,
+             `Log Odds Estimate` = Estimate)%>%
       select(-c(model,model_num)) %>%
       kableExtra::kbl(booktabs = TRUE, 
                       longtable = TRUE,
