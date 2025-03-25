@@ -2529,8 +2529,80 @@ reg_results <- reg_output %>%
 
 reg_results %>%
     kable(
-    align = "c", caption = "Table 4.1. Univariate associations of variable with proximal proportion of waking hours using cannabis, adjusting for time of day and using linear mixed effects regression with a random intercept")%>%
+    align = "c", caption = "Univariate associations of variable with proximal proportion of waking hours using cannabis, adjusting for time of day and using linear mixed effects regression with a random intercept")%>%
   kable_classic(full_width = F)
+
+```
+
+\newpage
+# 5. Examining Types of Messages, Using Categorical Treatment
+
+First, let us examine the bearing of message interaction type A (acknowledge) / B (acknowledge + click additional resources link) / C (acknowledge + fill in the blank/select an option) on proximal proportion of waking hours using cannabis, as well as the same for message length short (150 characters or less) / long (200 characters or more).
+
+```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE}  
+
+source("wcls_categorical_treatment.R")
+
+## examine bearing of message interaction type A, B, C on proximal cannabis use, as well as the same for message length long, short
+# create additional categorical treatement variable and adjust probabilities
+df_categ <- df %>%
+  # remove additional 9 observations where the message interaction type 
+  # and message length are missing from the dashboard
+  dplyr::filter(!(is.na(message_id) & actioni==1))%>% # 5,271->5,266 decision points remaining
+  dplyr::mutate(A_inter_type = ifelse(actioni==0,0,as.numeric(message_interaction_type)),
+         prob_A_inter_type = ifelse(actioni==0, probi, probi * (1/3)),
+         A_length_type = ifelse(actioni==0,0,
+                                ifelse(message_length == "Short",1,
+                                       ifelse(message_length == "Long", 2, 999))),
+         prob_A_length_type = ifelse(actioni==0, probi, probi * (1/2)),
+         # create additional variables
+         Y = prop_awakeuse,
+         S = as.numeric(A_length_type),
+         prob_A = prob_A_length_type,
+         A = as.numeric(A_length_type),
+         userid = id,
+         time = decision_point,
+         I = 1) %>%
+  dplyr::select(userid, time, Y, A, I, S, prob_A)
+
+# fit  <- wcls_categorical_treatment(
+#     dta = df_categ,
+#     id_varname = "id",
+#     treatment_varname = "A_inter_type",
+#     outcome_varname = "prop_awakeuse_c",
+#     #control_varname = c("S", "time"),
+#     control_varname = c("cov_prop_awakeuse_48hrs_c", "cov_interv_engag_24hrs_c", "timeofday", "week_day_binary", "cann_importance_bl_c", "cannhours_bl_c", "cannwake_bl_c"),
+#     moderator_varname = c(),
+#     rand_prob_varname = "prob_A_inter_type",
+#     estimator_initial_value = NULL,
+#     trt_level = 3 # number of active treatment levels (excluding 0, the reference level)
+#     #,avail_varname = "I"
+# )
+# 
+# fit$beta_hat # effect estimate
+# fit$beta_se_adjusted # standard error (incorporated small-sample correction)
+# fit$beta_conf_int_adjusted_t # 95% confidence interval (incorporated small-sample correction)
+# 
+# 
+# # examine bearing of message length short, long on proximal cannabis use 
+# fit  <- wcls_categorical_treatment(
+#     dta = df_categ,
+#     id_varname = "userid",
+#     treatment_varname = "A",
+#     outcome_varname = "Y",
+#     control_varname = c(),
+#     #control_varname = c("S", "time"),
+#     #control_varname = c("cov_prop_awakeuse_48hrs_c", "cov_interv_engag_24hrs_c", "timeofday", "week_day_binary", "cann_importance_bl_c", "cannhours_bl_c", "cannwake_bl_c"),
+#     moderator_varname = c(),
+#     rand_prob_varname = "prob_A",
+#     estimator_initial_value = NULL,
+#     trt_level = 2 # number of active treatment levels (excluding 0, the reference level)
+#     #,avail_varname = "I"
+# )
+# 
+# fit$beta_hat # effect estimate
+# fit$beta_se_adjusted # standard error (incorporated small-sample correction)
+# fit$beta_conf_int_adjusted_t # 95% confidence interval (incorporated small-sample correction)
 
 ```
   
