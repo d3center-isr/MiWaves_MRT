@@ -43,6 +43,11 @@ library(knitr)
 library(ggplot2)
 library(kableExtra)
 
+# function for cumulative sum
+stats_csum <- function(var){
+  ifelse(is.na(var)==T, NA, cumsum(replace_na(var,0)))
+}
+
 outdir<-"~/output"
 proc_dat <- "//maize.umhsnas.med.umich.edu/Psychiatry/Restricted/MiWaves/Pilot/Processed Data/"
 
@@ -90,6 +95,8 @@ full_dat <- prim_dat %>%
   dplyr::group_by(id) %>%
   dplyr::mutate(# create prior sending of a message candidate moderator
          prior_sent_message = lag(actioni),
+         # create cumulative number of messages sent to decision point t
+         cumul_num_message = stats_csum(actioni),
          log_awakeuse_offs = prop_awakeuse + 0.001,
          log_awakeuse = log(log_awakeuse_offs),
          logit_awakeuse = log((log_awakeuse_offs)/(1-(log_awakeuse_offs))),
@@ -2466,5 +2473,64 @@ m2 <- df %>%
        y = "Estimated Proportion of Waking Hours Using Cannabis") 
 
 print(m2)
+```
+
+\newpage
+# 4. Additional Exploratory Analyses
+
+Below are the additional exploratory research qustions (ERQ).
+
+- ERQ 1A. Examine whether there is a correlation between the cumulative number of prompts and proximal cannabis use, over time. Refer to *cumul_num_message*.
+  
+- ERQ 1B. And examine whether there is a correlation between the total number of prompts a person received and cannabis use at the end of the study and at 2-month follow up. 
+  
+- ERQ 2A. Examine whether there is a correlation between prior engagement and proximal cannabis use, over time. Refer to *prior_interv_engag*,*cov_interv_engag_72hrs*, *cov_interv_engag_48hrs*, *cov_interv_engag_24hrs*.
+  
+- ERQ 2B. And examine whether a correlation exists between average engagement and cannabis use at the end of the study and at 2-month follow up.
+  
+- ERQ 3. Examine whether there is a correlation between the mean proportion of cannabis use during waking hours (over study days) and cannabis use days reported at follow up.
+
+```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE}  
+
+require(lme4)
+# initialize output
+reg_output <- data.frame()
+rhs.vars.linear.me <- c("cumul_num_message","prior_interv_engag","cov_interv_engag_72hrs", "cov_interv_engag_48hrs", "cov_interv_engag_24hrs")
+
+library(lmerTest) # renders p-values
+# perform mixed effects linear regressions
+for(var_name in rhs.vars.linear.me) {
+
+  #print("Covariate:")
+  #print(var_name)
+  
+  lmm_formula <- paste0("prop_awakeuse ~ ",var_name," + morning + (1 | id)") # random intercept and adjusting for time of day
+  res_lmm <- lmer(formula = lmm_formula, data = df)
+  #print(summary(res_lmm))
+  sum_res <- summary(res_lmm)
+  
+  reg_temp <- as.data.frame(sum_res$coefficients)
+  reg_temp$Covariate <- rownames(reg_temp)
+  rownames(reg_temp) <- c()
+  reg_temp$RHS_variable <- var_name
+
+  reg_output <- rbind(reg_output,reg_temp)
+}
+
+reg_results <- reg_output %>%
+  rename(SE=`Std. Error`, Term=Covariate, pvalue=`Pr(>|t|)`) %>%
+  dplyr::mutate(UI_lower = Estimate - (1.96 * SE),
+                UI_upper = Estimate + (1.96 * SE),
+                across(where(is.numeric), round, 3)
+                )%>%
+  relocate(RHS_variable, Term, .before=Estimate)%>%
+  filter(RHS_variable == Term) %>%
+  select(Term,Estimate,SE,UI_lower,UI_upper,pvalue)
+
+reg_results %>%
+    kable(
+    align = "c", caption = "Table 4.1. Univariate associations of variable with proximal proportion of waking hours using cannabis, adjusting for time of day and using linear mixed effects regression with a random intercept")%>%
+  kable_classic(full_width = F)
+
 ```
   
