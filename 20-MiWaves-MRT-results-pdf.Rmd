@@ -103,7 +103,10 @@ full_dat <- prim_dat %>%
          # make binary version of cannabis use numeric
          can_yes_no_l = as.character(can_yes_no_l),
          can_yes_no_l = ifelse(can_yes_no_l=="Yes",1,
-                               ifelse(can_yes_no_l=="No",0,999))
+                               ifelse(can_yes_no_l=="No",0,999)),
+         # create numeric version of behavior activity question response
+         prior_beh_activity_response = ifelse(pre_engagement_activity_response == "True",1,
+                                              ifelse(pre_engagement_activity_response == "False",0,NA))
          ) %>%
   dplyr::ungroup() 
 
@@ -969,11 +972,8 @@ res_table <- function(res){
         general_title = "", footnote_as_chunk = T
       )%>%
       kableExtra::footnote(
-        general = "Moderation Effect Models include the covariates: time of day, day of week,", general_title = "", footnote_as_chunk = T
-      ) %>%
-      kableExtra::footnote(
-        general = "Notes: Standard errors are not yet adjusted to account for RL uncertainty.", general_title = "", footnote_as_chunk = T
-      ) 
+        general = "Notes: Moderation Effect Models include the covariates: time of day, day of week,", general_title = "", footnote_as_chunk = T
+      )
 }
 
 res_table(res)
@@ -1061,10 +1061,7 @@ res_table <- function(res){
         general_title = "", footnote_as_chunk = T
       )%>%
       kableExtra::footnote(
-        general = "Precision covariates include the following: time of day, day of week,", general_title = "", footnote_as_chunk = T
-      ) %>%
-      kableExtra::footnote(
-        general = "Notes: Standard errors are not yet adjusted to account for RL uncertainty.", general_title = "", footnote_as_chunk = T
+        general = "Notes: Precision covariates include the following: time of day, day of week,", general_title = "", footnote_as_chunk = T
       ) 
 }
 
@@ -1672,11 +1669,8 @@ res_table <- function(res){
         general_title = "", footnote_as_chunk = T
       )%>%
       kableExtra::footnote(
-        general = "Model with covariates adjusts for the following: time of day, day of week,", general_title = "", footnote_as_chunk = T
-      ) %>%
-      kableExtra::footnote(
-        general = "Notes: Standard errors are not yet adjusted to account for RL uncertainty.", general_title = "", footnote_as_chunk = T
-      ) 
+        general = "Notes: Model with covariates adjusts for the following: time of day, day of week,", general_title = "", footnote_as_chunk = T
+      )
 }
 
 res_table(res)
@@ -2134,11 +2128,8 @@ res_table <- function(res){
         general_title = "", footnote_as_chunk = T
       )%>%
       kableExtra::footnote(
-        general = "Model with covariates adjusts for the following: time of day, day of week,", general_title = "", footnote_as_chunk = T
-      ) %>%
-      kableExtra::footnote(
-        general = "Notes: Standard errors are not yet adjusted to account for RL uncertainty.", general_title = "", footnote_as_chunk = T
-      ) 
+        general = "Notes: Model with covariates adjusts for the following: time of day, day of week,", general_title = "", footnote_as_chunk = T
+      )
 }
 
 res_table(res)
@@ -2223,11 +2214,8 @@ res_table <- function(res){
         general_title = "", footnote_as_chunk = T
       )%>%
       kableExtra::footnote(
-        general = "Model with covariates adjusts for the following: time of day, day of week,", general_title = "", footnote_as_chunk = T
-      ) %>%
-      kableExtra::footnote(
-        general = "Notes: Standard errors are not yet adjusted to account for RL uncertainty.", general_title = "", footnote_as_chunk = T
-      ) 
+        general = "Notes: Model with covariates adjusts for the following: time of day, day of week,", general_title = "", footnote_as_chunk = T
+      )
 }
 
 res_table(res)
@@ -2311,11 +2299,8 @@ res_table <- function(res){
         general_title = "", footnote_as_chunk = T
       )%>%
       kableExtra::footnote(
-        general = "Model with covariates adjusts for the following: time of day, day of week,", general_title = "", footnote_as_chunk = T
-      ) %>%
-      kableExtra::footnote(
-        general = "Notes: Standard errors are not yet adjusted to account for RL uncertainty.", general_title = "", footnote_as_chunk = T
-      ) 
+        general = "Notes: Model with covariates adjusts for the following: time of day, day of week,", general_title = "", footnote_as_chunk = T
+      )
 }
 
 res_table(res)
@@ -2480,34 +2465,42 @@ print(m2)
 
 Below are the additional exploratory research qustions (ERQ).
 
-- ERQ 1A. Examine whether there is a correlation between the cumulative number of prompts and proximal cannabis use, over time. Refer to *cumul_num_message*.
+- ERQ 1A. Examine whether there is a correlation between the cumulative number of prompts and proximal cannabis use, over time. Refer to *cumul_num_message* in Table 17.
   
-- ERQ 1B. And examine whether there is a correlation between the total number of prompts a person received and cannabis use at the end of the study and at 2-month follow up. 
+- ERQ 1B. And examine whether there is a correlation between the total number of prompts a person received and cannabis use days at the end of the study and at 2-month follow up. Refer to *tot_num_message* in Table 18.
   
-- ERQ 2A. Examine whether there is a correlation between prior engagement and proximal cannabis use, over time. Refer to *prior_interv_engag*,*cov_interv_engag_72hrs*, *cov_interv_engag_48hrs*, *cov_interv_engag_24hrs*.
+- ERQ 2A. Examine whether there is a correlation between prior engagement and proximal cannabis use, over time. Refer to *prior_interv_engag*,*cov_interv_engag_72hrs*, *cov_interv_engag_48hrs*, *cov_interv_engag_24hrs* in Table 17.
   
-- ERQ 2B. And examine whether a correlation exists between average engagement and cannabis use at the end of the study and at 2-month follow up.
+- ERQ 2B. And examine whether a correlation exists between average engagement and cannabis use days at the end of the study and at 2-month follow up. Refer to *avg_engagement_multi* in Table 18.
   
-- ERQ 3. Examine whether there is a correlation between the mean proportion of cannabis use during waking hours (over study days) and cannabis use days reported at follow up.
+- ERQ 3. Examine whether there is a correlation between the mean proportion of cannabis use during waking hours (over study days) and cannabis use days reported at post-test and 2-month follow up. Refer to *avg_prop_awakeuse* in Table 18.
+  
+- ERQ 4A. Examine whether there is a correlation between the prior self-reported behavior activity and proximal cannabis use, over time. Refer to *prior_beh_activity_response* in Table 17.
+
+- ERQ 4B. And examine whether there is a correlation between the mean self-reported behavior activity and cannabis use days at the end of the study and at 2-month follow up. Refer to *avg_beh_activity_response* in Table 18.
 
 ```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE}  
 
-require(lme4)
+## First perform analyses ERQ 1A, ERQ 2A, and ERQ 4A that are over time at the decision point level
+require(geepack)
 # initialize output
 reg_output <- data.frame()
-rhs.vars.linear.me <- c("cumul_num_message","prior_interv_engag","cov_interv_engag_72hrs", "cov_interv_engag_48hrs", "cov_interv_engag_24hrs")
+rhs.vars.linear.me <- c("cumul_num_message","prior_interv_engag","cov_interv_engag_72hrs", "cov_interv_engag_48hrs", "cov_interv_engag_24hrs", "prior_beh_activity_response")
 
-library(lmerTest) # renders p-values
-# perform mixed effects linear regressions
+# perform GEE regressions
 for(var_name in rhs.vars.linear.me) {
-
-  #print("Covariate:")
-  #print(var_name)
+  gee_formula <- as.formula(paste0("prop_awakeuse ~ ",var_name," + morning + prop_awakeuse_prior"))
+  data <- df %>%
+    select(all_of(all.vars(gee_formula)), id) %>%
+    na.omit()
   
-  lmm_formula <- paste0("prop_awakeuse ~ ",var_name," + morning + (1 | id)") # random intercept and adjusting for time of day
-  res_lmm <- lmer(formula = lmm_formula, data = df)
-  #print(summary(res_lmm))
-  sum_res <- summary(res_lmm)
+  gee_fit <- geeglm(gee_formula, 
+                    data = data, 
+                    id = id, 
+                    family = gaussian(), 
+                    corstr = "independence",
+                    std.err = "san.se") # the default
+  sum_res <- summary(gee_fit)
   
   reg_temp <- as.data.frame(sum_res$coefficients)
   reg_temp$Covariate <- rownames(reg_temp)
@@ -2518,7 +2511,7 @@ for(var_name in rhs.vars.linear.me) {
 }
 
 reg_results <- reg_output %>%
-  rename(SE=`Std. Error`, Term=Covariate, pvalue=`Pr(>|t|)`) %>%
+  rename(SE=`Std.err`, Term=Covariate, pvalue=`Pr(>|W|)`) %>%
   dplyr::mutate(UI_lower = Estimate - (1.96 * SE),
                 UI_upper = Estimate + (1.96 * SE),
                 across(where(is.numeric), round, 3)
@@ -2529,9 +2522,106 @@ reg_results <- reg_output %>%
 
 reg_results %>%
     kable(
-    align = "c", caption = "Univariate associations of variable with proximal proportion of waking hours using cannabis, adjusting for time of day and using linear mixed effects regression with a random intercept")%>%
+    align = "c", caption = "Univariate associations of variable with proximal proportion of waking hours using cannabis, adjusting for time of day and prior cannabis use and using generalized estimating equations")%>%
   kable_classic(full_width = F)
 
+## Second perform analyses that use aggregates across the study time period
+agg_df <- df %>%
+  dplyr::group_by(id) %>%
+  dplyr::mutate(
+                tot_num_message = sum(actioni,na.rm=T),
+                avg_engagement_multi = mean(engagement_multi,na.rm=T),
+                avg_prop_awakeuse = mean(prop_awakeuse,na.rm=T),
+                avg_beh_activity_response = mean(prior_beh_activity_response,na.rm=T)
+                # avg_prop_awakeuse_weighted = mean(prop_awakeuse,na.rm=T)
+                ) %>%
+  dplyr::ungroup() %>%
+  dplyr::select(id, completed_posttest, completed_fu2mo, canndays_pt, canndays_fu, tot_num_message, avg_engagement_multi, avg_prop_awakeuse, avg_beh_activity_response) %>%
+  dplyr::distinct(id, completed_posttest, completed_fu2mo, canndays_pt, canndays_fu, tot_num_message, avg_engagement_multi, avg_prop_awakeuse, avg_beh_activity_response) %>%
+  # code true zeros
+  dplyr::mutate(canndays_pt = ifelse(completed_posttest==1 & is.na(canndays_pt),0,canndays_pt),
+                canndays_fu = ifelse(completed_fu2mo==1 & is.na(canndays_fu),0,canndays_fu))
+```
+\newpage
+```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE} 
+## Second perform analyses that use aggregates across the study time period
+agg_df <- df %>%
+  dplyr::group_by(id) %>%
+  dplyr::mutate(
+                tot_num_message = sum(actioni,na.rm=T),
+                avg_engagement_multi = mean(engagement_multi,na.rm=T),
+                avg_prop_awakeuse = mean(prop_awakeuse,na.rm=T),
+                avg_beh_activity_response = mean(prior_beh_activity_response,na.rm=T)
+                # avg_prop_awakeuse_weighted = mean(prop_awakeuse,na.rm=T)
+                ) %>%
+  dplyr::ungroup() %>%
+  dplyr::select(id, completed_posttest, completed_fu2mo, canndays_pt, canndays_fu, tot_num_message, avg_engagement_multi, avg_prop_awakeuse, avg_beh_activity_response) %>%
+  dplyr::distinct(id, completed_posttest, completed_fu2mo, canndays_pt, canndays_fu, tot_num_message, avg_engagement_multi, avg_prop_awakeuse, avg_beh_activity_response) %>%
+  # code true zeros
+  dplyr::mutate(canndays_pt = ifelse(completed_posttest==1 & is.na(canndays_pt),0,canndays_pt),
+                canndays_fu = ifelse(completed_fu2mo==1 & is.na(canndays_fu),0,canndays_fu))
+
+# initialize output
+cs_reg_output <- data.frame()
+rhs.vars.linear <- c("tot_num_message", "avg_engagement_multi", "avg_prop_awakeuse", "avg_beh_activity_response")
+
+# perform cross-sectional regressions
+for(var_name in rhs.vars.linear) {
+  
+  lm_formula <- paste0("canndays_pt ~ ",var_name) 
+  res_lm.v1 <- lm(formula = lm_formula, data = agg_df)
+  sum_res.v1 <- summary(res_lm.v1)
+  
+  reg_temp.v1 <- as.data.frame(sum_res.v1$coefficients) %>%
+    mutate(Outcome = "Post Test Cann. Use Days",
+          RHS_variable = var_name,
+          Order = 1)
+  reg_temp.v1$Covariate <- rownames(reg_temp.v1)
+  rownames(reg_temp.v1) <- c()
+  
+  lm_formula <- paste0("canndays_fu ~ ",var_name) 
+  res_lm.v2 <- lm(formula = lm_formula, data = agg_df)
+  sum_res.v2 <- summary(res_lm.v2)
+  
+  reg_temp.v2 <- as.data.frame(sum_res.v2$coefficients) %>%
+    mutate(Outcome = "2-Month Follow up Cann. Use Days",
+          RHS_variable = var_name,
+          Order = 2)
+  reg_temp.v2$Covariate <- rownames(reg_temp.v2)
+  rownames(reg_temp.v2) <- c()
+  
+  lm_formula <- paste0("avg_prop_awakeuse ~ ",var_name) 
+  res_lm.v3 <- lm(formula = lm_formula, data = agg_df)
+  sum_res.v3 <- summary(res_lm.v3)
+  
+  reg_temp.v3 <- as.data.frame(sum_res.v3$coefficients) %>%
+  mutate(Outcome = "Avg. Prop. Awake Hrs Using Cannabis",
+        RHS_variable = var_name,
+        Order = 3)
+  reg_temp.v3$Covariate <- rownames(reg_temp.v3)
+  rownames(reg_temp.v3) <- c()  
+
+  
+  cs_reg_output <- bind_rows(cs_reg_output, reg_temp.v1, reg_temp.v2, reg_temp.v3) 
+}
+
+cs_reg_results <- cs_reg_output %>%
+  rename(SE=`Std. Error`, Term=Covariate, pvalue=`Pr(>|t|)`) %>%
+  dplyr::mutate(UI_lower = Estimate - (1.96 * SE),
+                UI_upper = Estimate + (1.96 * SE),
+                across(where(is.numeric), round, 3)
+                )%>%
+  relocate(Outcome, RHS_variable, Term, .before=Estimate)%>%
+  filter(RHS_variable == Term) %>%
+  arrange(Order) %>%
+  filter(!((Order==3) & (Term=="avg_prop_awakeuse"))) %>%
+  select(Outcome,Term,Estimate,SE,UI_lower,UI_upper,pvalue)
+
+
+cs_reg_results %>%
+    kable(
+    align = "c", caption = "Univariate associations of variable with cannabis use days at post-test and at 2-month follow up and with avg. prop. of waking hours using cannabis, using cross-sectional linear regressions")%>%
+  kable_classic(full_width = F)
 ```
 
 \newpage
