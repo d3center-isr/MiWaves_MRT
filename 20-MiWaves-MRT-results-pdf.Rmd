@@ -97,6 +97,7 @@ full_dat <- prim_dat %>%
          prior_sent_message = lag(actioni),
          # create cumulative number of messages sent to decision point t
          cumul_num_message = stats_csum(actioni),
+         cumul_num_message_sq = cumul_num_message^2,
          log_awakeuse_offs = prop_awakeuse + 0.001,
          log_awakeuse = log(log_awakeuse_offs),
          logit_awakeuse = log((log_awakeuse_offs)/(1-(log_awakeuse_offs))),
@@ -2489,7 +2490,7 @@ rhs.vars.linear.me <- c("cumul_num_message","prior_interv_engag","cov_interv_eng
 
 # perform GEE regressions
 for(var_name in rhs.vars.linear.me) {
-  gee_formula <- as.formula(paste0("prop_awakeuse ~ ",var_name," + morning + prop_awakeuse_prior"))
+  gee_formula <- as.formula(paste0("prop_awakeuse ~ ",var_name," + timeofday + prop_awakeuse_prior"))
   data <- df %>%
     select(all_of(all.vars(gee_formula)), id) %>%
     na.omit()
@@ -2551,12 +2552,13 @@ agg_df <- df %>%
                 tot_num_message = sum(actioni,na.rm=T),
                 avg_engagement_multi = mean(engagement_multi,na.rm=T),
                 avg_prop_awakeuse = mean(prop_awakeuse,na.rm=T),
-                avg_beh_activity_response = mean(prior_beh_activity_response,na.rm=T)
+                avg_beh_activity_response = mean(prior_beh_activity_response,na.rm=T),
                 # avg_prop_awakeuse_weighted = mean(prop_awakeuse,na.rm=T)
+                tot_num_message_sq = tot_num_message^2
                 ) %>%
   dplyr::ungroup() %>%
-  dplyr::select(id, completed_posttest, completed_fu2mo, canndays_pt, canndays_fu, tot_num_message, avg_engagement_multi, avg_prop_awakeuse, avg_beh_activity_response) %>%
-  dplyr::distinct(id, completed_posttest, completed_fu2mo, canndays_pt, canndays_fu, tot_num_message, avg_engagement_multi, avg_prop_awakeuse, avg_beh_activity_response) %>%
+  dplyr::select(id, completed_posttest, completed_fu2mo, canndays_pt, canndays_fu, tot_num_message, tot_num_message_sq, avg_engagement_multi, avg_prop_awakeuse, avg_beh_activity_response, cann_importance_bl, canndays_bl) %>%
+  dplyr::distinct(id, completed_posttest, completed_fu2mo, canndays_pt, canndays_fu, tot_num_message, tot_num_message_sq, avg_engagement_multi, avg_prop_awakeuse, avg_beh_activity_response, cann_importance_bl, canndays_bl) %>%
   # code true zeros
   dplyr::mutate(canndays_pt = ifelse(completed_posttest==1 & is.na(canndays_pt),0,canndays_pt),
                 canndays_fu = ifelse(completed_fu2mo==1 & is.na(canndays_fu),0,canndays_fu))
@@ -2568,7 +2570,7 @@ rhs.vars.linear <- c("tot_num_message", "avg_engagement_multi", "avg_prop_awakeu
 # perform cross-sectional regressions
 for(var_name in rhs.vars.linear) {
   
-  lm_formula <- paste0("canndays_pt ~ ",var_name) 
+  lm_formula <- paste0("canndays_pt ~ ",var_name, "+ canndays_bl") 
   res_lm.v1 <- lm(formula = lm_formula, data = agg_df)
   sum_res.v1 <- summary(res_lm.v1)
   
@@ -2579,7 +2581,7 @@ for(var_name in rhs.vars.linear) {
   reg_temp.v1$Covariate <- rownames(reg_temp.v1)
   rownames(reg_temp.v1) <- c()
   
-  lm_formula <- paste0("canndays_fu ~ ",var_name) 
+  lm_formula <- paste0("canndays_fu ~ ",var_name, "+ canndays_bl") 
   res_lm.v2 <- lm(formula = lm_formula, data = agg_df)
   sum_res.v2 <- summary(res_lm.v2)
   
@@ -2590,7 +2592,7 @@ for(var_name in rhs.vars.linear) {
   reg_temp.v2$Covariate <- rownames(reg_temp.v2)
   rownames(reg_temp.v2) <- c()
   
-  lm_formula <- paste0("avg_prop_awakeuse ~ ",var_name) 
+  lm_formula <- paste0("avg_prop_awakeuse ~ ",var_name, "+ canndays_bl") 
   res_lm.v3 <- lm(formula = lm_formula, data = agg_df)
   sum_res.v3 <- summary(res_lm.v3)
   
@@ -2620,8 +2622,109 @@ cs_reg_results <- cs_reg_output %>%
 
 cs_reg_results %>%
     kable(
-    align = "c", caption = "Univariate associations of variable with cannabis use days at post-test and at 2-month follow up and with avg. prop. of waking hours using cannabis, using cross-sectional linear regressions")%>%
+    align = "c", caption = "Univariate associations of variable with cannabis use days at post-test and at 2-month follow up and with avg. prop. of waking hours using cannabis, when adjusting for baseline cannabis use days, using cross-sectional linear regressions")%>%
   kable_classic(full_width = F)
+
+# examine quadratic form of cumulative number of messages over time
+q_reg_output <- data.frame()
+
+gee_formula <- as.formula(paste0("prop_awakeuse ~ cumul_num_message + cumul_num_message_sq + timeofday + prop_awakeuse_prior"))
+data <- df %>%
+  select(all_of(all.vars(gee_formula)), id) %>%
+  na.omit()
+
+gee_fit <- geeglm(gee_formula, 
+                  data = data, 
+                  id = id, 
+                  family = gaussian(), 
+                  corstr = "independence",
+                  std.err = "san.se") # the default
+sum_res <- summary(gee_fit)
+  
+q_reg_output <- as.data.frame(sum_res$coefficients) %>%
+  mutate(Outcome = "Proximal Prop. Awake Hrs Using Cannabis")
+q_reg_output$Covariate <- rownames(q_reg_output)
+rownames(q_reg_output) <- c()
+
+q_reg_results <- q_reg_output %>%
+  rename(SE=`Std.err`, Term=Covariate, pvalue=`Pr(>|W|)`) %>%
+  dplyr::mutate(UI_lower = Estimate - (1.96 * SE),
+                UI_upper = Estimate + (1.96 * SE),
+                across(where(is.numeric), round, 3)
+                )%>%
+  relocate(Outcome, Term, .before=Estimate)%>%
+  select(Outcome,Term,Estimate,SE,UI_lower,UI_upper,pvalue)
+
+q_reg_results %>%
+    kable(
+    align = "c", caption = "Examining quadratic trend in cumulative number of messages in terms of  proximal proportion of waking hours using cannabis, when adjusting for time of day and prior cannabis use, using generalized estimating equations")%>%
+  kable_classic(full_width = F)
+```
+\newpage
+```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE} 
+# examine interaction with baseline motivation to change
+cs_reg_output <- data.frame()
+rhs.vars.linear <- c("tot_num_message", "avg_engagement_multi", "avg_prop_awakeuse", "avg_beh_activity_response")
+
+# perform cross-sectional regressions
+for(var_name in rhs.vars.linear) {
+  
+  lm_formula <- paste0("canndays_pt ~ ",var_name,"*cann_importance_bl", "+ canndays_bl") 
+  res_lm.v1 <- lm(formula = lm_formula, data = agg_df)
+  sum_res.v1 <- summary(res_lm.v1)
+  
+  reg_temp.v1 <- as.data.frame(sum_res.v1$coefficients) %>%
+    mutate(Outcome = "V1",
+          RHS_variable = var_name,
+          Order = 1)
+  reg_temp.v1$Covariate <- rownames(reg_temp.v1)
+  rownames(reg_temp.v1) <- c()
+  
+  lm_formula <- paste0("canndays_fu ~ ",var_name,"*cann_importance_bl", "+ canndays_bl") 
+  res_lm.v2 <- lm(formula = lm_formula, data = agg_df)
+  sum_res.v2 <- summary(res_lm.v2)
+  
+  reg_temp.v2 <- as.data.frame(sum_res.v2$coefficients) %>%
+    mutate(Outcome = "V2",
+          RHS_variable = var_name,
+          Order = 2)
+  reg_temp.v2$Covariate <- rownames(reg_temp.v2)
+  rownames(reg_temp.v2) <- c()
+  
+  lm_formula <- paste0("avg_prop_awakeuse ~ ",var_name,"*cann_importance_bl", "+ canndays_bl") 
+  res_lm.v3 <- lm(formula = lm_formula, data = agg_df)
+  sum_res.v3 <- summary(res_lm.v3)
+  
+  reg_temp.v3 <- as.data.frame(sum_res.v3$coefficients) %>%
+  mutate(Outcome = "V3",
+        RHS_variable = var_name,
+        Order = 3)
+  reg_temp.v3$Covariate <- rownames(reg_temp.v3)
+  rownames(reg_temp.v3) <- c()  
+
+  
+  cs_reg_output <- bind_rows(cs_reg_output, reg_temp.v1, reg_temp.v2, reg_temp.v3) 
+}
+
+cs_reg_results <- cs_reg_output %>%
+  rename(SE=`Std. Error`, Term=Covariate, pvalue=`Pr(>|t|)`) %>%
+  dplyr::mutate(UI_lower = Estimate - (1.96 * SE),
+                UI_upper = Estimate + (1.96 * SE),
+                across(where(is.numeric), round, 3)
+                )%>%
+  relocate(Outcome, RHS_variable, Term, .before=Estimate)%>%
+  #filter(RHS_variable == Term) %>%
+  arrange(Order) %>%
+  filter(!((Order==3) & (Term=="avg_prop_awakeuse"))& Term!="(Intercept)" & Term!="canndays_bl") %>%
+  select(Outcome,Term,Estimate,SE,UI_lower,UI_upper,pvalue)
+
+
+cs_reg_results %>%
+    kable(
+    align = "c", caption = "Baseline motivation to change interaction with each variable, for cannabis use days at post-test (V1), at 2-month follow up (V2) and with avg. prop. of waking hours using cannabis (V3), when adjusting for baseline cannabis use days, using cross-sectional linear regressions")%>%
+  kable_classic(full_width = F)
+
+
 ```
 
 \newpage
