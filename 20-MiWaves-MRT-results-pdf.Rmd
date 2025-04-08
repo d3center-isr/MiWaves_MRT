@@ -2479,7 +2479,12 @@ Below are the additional exploratory research qustions (ERQ).
 - ERQ 4A. Examine whether there is a correlation between the prior self-reported behavior activity and proximal cannabis use, over time. Refer to *prior_beh_activity_response* in Table 17.
 
 - ERQ 4B. And examine whether there is a correlation between the mean self-reported behavior activity and cannabis use days at the end of the study and at 2-month follow up. Refer to *avg_beh_activity_response* in Table 18.
-
+  
+- ERQ 5. Examine whether there is a quadratic trend in cumulative number of messages in terms of the proximal proportion of waking hours using cannabis outcome, over time. Refer to *cumul_num_message* Table 19.
+  
+- ERQ 6. Examine interaction term with baseline motivation to change, for the aggregate regressions for post-test, follow-up, and average across study time period. Refer to Table 20.
+  
+- ERQ 7. Examine interaction between engagement (in forms of engagement score and activity question response) and cannabis use days at baseline, in terms of the three cannabis use aggregate outcomes. Refer to Table 21.
 ```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE}  
 
 ## First perform analyses ERQ 1A, ERQ 2A, and ERQ 4A that are over time at the decision point level
@@ -2726,12 +2731,82 @@ cs_reg_results %>%
 
 
 ```
+\newpage
+```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE} 
+# examine interaction between baseline cannabis use and the IV
+# Average engagement (IV) on 2 month follow up cannabis use (DV)
+# Average behavioral activity (IV) on 2 month follow up cannabis use (DV)
+
+cs_reg_output <- data.frame()
+rhs.vars.linear <- c("avg_engagement_multi", "avg_beh_activity_response")
+
+# perform cross-sectional regressions
+for(var_name in rhs.vars.linear) {
+  
+  lm_formula <- paste0("canndays_pt ~ ",var_name,"*canndays_bl") 
+  res_lm.v1 <- lm(formula = lm_formula, data = agg_df)
+  sum_res.v1 <- summary(res_lm.v1)
+  
+  reg_temp.v1 <- as.data.frame(sum_res.v1$coefficients) %>%
+    mutate(Outcome = "V1",
+          RHS_variable = var_name,
+          Order = 1)
+  reg_temp.v1$Covariate <- rownames(reg_temp.v1)
+  rownames(reg_temp.v1) <- c()
+  
+  lm_formula <- paste0("canndays_fu ~ ",var_name,"*canndays_bl") 
+  res_lm.v2 <- lm(formula = lm_formula, data = agg_df)
+  sum_res.v2 <- summary(res_lm.v2)
+  
+  reg_temp.v2 <- as.data.frame(sum_res.v2$coefficients) %>%
+    mutate(Outcome = "V2",
+          RHS_variable = var_name,
+          Order = 2)
+  reg_temp.v2$Covariate <- rownames(reg_temp.v2)
+  rownames(reg_temp.v2) <- c()
+  
+  lm_formula <- paste0("avg_prop_awakeuse ~ ",var_name,"*canndays_bl") 
+  res_lm.v3 <- lm(formula = lm_formula, data = agg_df)
+  sum_res.v3 <- summary(res_lm.v3)
+  
+  reg_temp.v3 <- as.data.frame(sum_res.v3$coefficients) %>%
+  mutate(Outcome = "V3",
+        RHS_variable = var_name,
+        Order = 3)
+  reg_temp.v3$Covariate <- rownames(reg_temp.v3)
+  rownames(reg_temp.v3) <- c()  
+
+  
+  cs_reg_output <- bind_rows(cs_reg_output, reg_temp.v1, reg_temp.v2, reg_temp.v3) 
+}
+
+cs_reg_results <- cs_reg_output %>%
+  rename(SE=`Std. Error`, Term=Covariate, pvalue=`Pr(>|t|)`) %>%
+  dplyr::mutate(UI_lower = Estimate - (1.96 * SE),
+                UI_upper = Estimate + (1.96 * SE),
+                across(where(is.numeric), round, 3)
+                )%>%
+  relocate(Outcome, RHS_variable, Term, .before=Estimate)%>%
+  #filter(RHS_variable == Term) %>%
+  arrange(Order) %>%
+  filter(!((Order==3) & (Term=="avg_prop_awakeuse"))& Term!="(Intercept)") %>%
+  select(Outcome,Term,Estimate,SE,UI_lower,UI_upper,pvalue)
+
+
+cs_reg_results %>%
+    kable(
+    align = "c", caption = "Baseline cannabis use days interaction with each engagement variable, for cannabis use days at post-test (V1), at 2-month follow up (V2) and with avg. prop. of waking hours using cannabis (V3), using cross-sectional linear regressions")%>%
+  kable_classic(full_width = F)
+
+
+```
 
 \newpage
 # 5. Examining Types of Messages, Using Categorical Treatment
 
-First, let us examine the bearing of message interaction type A (acknowledge) / B (acknowledge + click additional resources link) / C (acknowledge + fill in the blank/select an option) on proximal proportion of waking hours using cannabis, as well as the same for message length short (150 characters or less) / long (200 characters or more).
-
+First, let us examine the bearing of message interaction type A=1 (acknowledge) / B=2 (acknowledge + click additional resources link) / C=3 (acknowledge + fill in the blank/select an option) on proximal proportion of waking hours using cannabis, as well as the same for message length short=1 (150 characters or less) / long=2 (200 characters or more).  
+  
+Notes: All continuous covariates are mean-centered. The continuous proximal engagement outcome is also mean-centered for interpretation of the fully marginal causal excursion effect. 
 ```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE}  
 
 source("wcls_categorical_treatment.R")
@@ -2748,54 +2823,172 @@ df_categ <- df %>%
                                 ifelse(message_length == "Short",1,
                                        ifelse(message_length == "Long", 2, 999))),
          prob_A_length_type = ifelse(actioni==0, probi, probi * (1/2)),
-         # create additional variables
-         Y = prop_awakeuse,
-         S = as.numeric(A_length_type),
-         prob_A = prob_A_length_type,
-         A = as.numeric(A_length_type),
-         userid = id,
-         time = decision_point,
-         I = 1) %>%
-  dplyr::select(userid, time, Y, A, I, S, prob_A)
+         # adjust class to be compatible with source script
+         week_day_binary = as.numeric(week_day_binary),
+         timeofday = as.integer(timeofday),
+         I = 1) 
 
-# fit  <- wcls_categorical_treatment(
-#     dta = df_categ,
-#     id_varname = "id",
-#     treatment_varname = "A_inter_type",
-#     outcome_varname = "prop_awakeuse_c",
-#     #control_varname = c("S", "time"),
-#     control_varname = c("cov_prop_awakeuse_48hrs_c", "cov_interv_engag_24hrs_c", "timeofday", "week_day_binary", "cann_importance_bl_c", "cannhours_bl_c", "cannwake_bl_c"),
-#     moderator_varname = c(),
-#     rand_prob_varname = "prob_A_inter_type",
-#     estimator_initial_value = NULL,
-#     trt_level = 3 # number of active treatment levels (excluding 0, the reference level)
-#     #,avail_varname = "I"
-# )
-# 
-# fit$beta_hat # effect estimate
-# fit$beta_se_adjusted # standard error (incorporated small-sample correction)
-# fit$beta_conf_int_adjusted_t # 95% confidence interval (incorporated small-sample correction)
-# 
-# 
-# # examine bearing of message length short, long on proximal cannabis use 
-# fit  <- wcls_categorical_treatment(
-#     dta = df_categ,
-#     id_varname = "userid",
-#     treatment_varname = "A",
-#     outcome_varname = "Y",
-#     control_varname = c(),
-#     #control_varname = c("S", "time"),
-#     #control_varname = c("cov_prop_awakeuse_48hrs_c", "cov_interv_engag_24hrs_c", "timeofday", "week_day_binary", "cann_importance_bl_c", "cannhours_bl_c", "cannwake_bl_c"),
-#     moderator_varname = c(),
-#     rand_prob_varname = "prob_A",
-#     estimator_initial_value = NULL,
-#     trt_level = 2 # number of active treatment levels (excluding 0, the reference level)
-#     #,avail_varname = "I"
-# )
-# 
-# fit$beta_hat # effect estimate
-# fit$beta_se_adjusted # standard error (incorporated small-sample correction)
-# fit$beta_conf_int_adjusted_t # 95% confidence interval (incorporated small-sample correction)
+#categorical treatment (no message=0, interaction type A=1, B=2, C=3)
+fit.1  <- wcls_categorical_treatment(
+  dta = df_categ,
+  decision_time_varname = "decision_point",
+  id_varname = "id",
+  treatment_varname = "A_inter_type",
+  outcome_varname = "prop_awakeuse_c",
+  control_varname = c("cov_prop_awakeuse_48hrs_c", "cov_interv_engag_24hrs_c", "timeofday", "week_day_binary", "cann_importance_bl_c", "cannhours_bl_c", "cannwake_bl_c"),
+  moderator_varname = c(),
+  rand_prob_varname = "prob_A_inter_type",
+  estimator_initial_value = NULL,
+  trt_level = 3
+)
+
+print("beta causal excursion effect estimates for message interaction type,")
+print("where 0=no message, 1=A (acknowledge), 2=B (click link), 3=C (fill-in-blank):")
+round(fit.1$beta_hat,digits=4)
+print("standard errors:")
+round(fit.1$beta_se_adjusted,digits=4)
+print("95% confidence intervals:")
+round(fit.1$conf_int_adjusted_t,digits=4)
+
+#categorical treatment (no message=0, short length message=1, long message=2)
+fit.2  <- wcls_categorical_treatment(
+  dta = df_categ,
+  decision_time_varname = "decision_point",
+  id_varname = "id",
+  treatment_varname = "A_length_type",
+  outcome_varname = "prop_awakeuse_c",
+  control_varname = c("cov_prop_awakeuse_48hrs_c", "cov_interv_engag_24hrs_c", "timeofday", "week_day_binary", "cann_importance_bl_c", "cannhours_bl_c", "cannwake_bl_c"),
+  moderator_varname = c(),
+  rand_prob_varname = "prob_A_length_type",
+  estimator_initial_value = NULL,
+  trt_level = 2
+)
+print("beta causal excursion effect estimates for message length type,")
+print("where 0=no message, 1=short (<=150 characters),  2=long (>=200 chararacters):")
+round(fit.2$beta_hat,digits=4)
+print("standard errors")
+round(fit.2$beta_se_adjusted,digits=4)
+print("95% confidence intervals")
+round(fit.2$conf_int_adjusted_t,digits=4)
+
+```
+
+Next, let us again examine the bearing of message interaction type A=1 (acknowledge) / B=2 (acknowledge + click additional resources link) / C=3 (acknowledge + fill in the blank/select an option) except for on proximal intervention engagement. Then, similarly, we examine the same for message length short=1 (150 characters or less) / long=2 (200 characters or more). The results below reflect an analogous sample size as for proximal cannabis use, that is the additional restriction is applied of removing decision points without an EMA completion.
+  
+Notes: All continuous covariates are mean-centered. The continuous proximal engagement outcome is also mean-centered for interpretation of the fully marginal causal excursion effect. 
+```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE}  
+
+source("wcls_categorical_treatment.R")
+
+#categorical treatment (no message=0, interaction type A=1, B=2, C=3)
+fit.3  <- wcls_categorical_treatment(
+  dta = df_categ,
+  decision_time_varname = "decision_point",
+  id_varname = "id",
+  treatment_varname = "A_inter_type",
+  outcome_varname = "engagement_multi_c",
+  control_varname = c("timeofday", "week_day_binary", "cov_interv_engag_72hrs_c", "cov_humtch_binary_48hrs_c"),
+  moderator_varname = c(),
+  rand_prob_varname = "prob_A_inter_type",
+  estimator_initial_value = NULL,
+  trt_level = 3
+)
+
+print("beta causal excursion effect estimates for message interaction type,")
+print("where 0=no message, 1=A (acknowledge), 2=B (click link), 3=C (fill-in-blank):")
+round(fit.3$beta_hat,digits=4)
+print("standard errors:")
+round(fit.3$beta_se_adjusted,digits=4)
+print("95% confidence intervals:")
+round(fit.3$conf_int_adjusted_t,digits=4)
+
+#categorical treatment (no message=0, short length message=1, long message=2)
+fit.4  <- wcls_categorical_treatment(
+  dta = df_categ,
+  decision_time_varname = "decision_point",
+  id_varname = "id",
+  treatment_varname = "A_length_type",
+  outcome_varname = "engagement_multi_c",
+  control_varname = c("timeofday", "week_day_binary", "cov_interv_engag_72hrs_c", "cov_humtch_binary_48hrs_c"),
+  moderator_varname = c(),
+  rand_prob_varname = "prob_A_length_type",
+  estimator_initial_value = NULL,
+  trt_level = 2
+)
+print("beta causal excursion effect estimates for message length type,")
+print("where 0=no message, 1=short (<=150 characters),  2=long (>=200 chararacters):")
+round(fit.4$beta_hat,digits=4)
+print("standard errors")
+round(fit.4$beta_se_adjusted,digits=4)
+print("95% confidence intervals")
+round(fit.4$conf_int_adjusted_t,digits=4)
+
+```
+The results below reflect the engagement sample size, that does not additionally remove decision points without an EMA completion.
+  
+Notes: All continuous covariates are mean-centered. The continuous proximal engagement outcome is also mean-centered for interpretation of the fully marginal causal excursion effect. 
+```{r, tidy.opts=list(width.cutoff=60), tidy=TRUE, echo=FALSE}  
+
+source("wcls_categorical_treatment.R")
+## examine bearing of message interaction type A, B, C on proximal engagement, as well as the same for message length long, short
+# create additional categorical treatement variable and adjust probabilities
+df_engag_categ <- df_engag %>%
+  # remove additional 9 observations where the message interaction type 
+  # and message length are missing from the dashboard
+  dplyr::filter(!(is.na(message_id) & actioni==1))%>% # 7,038 -> 7,029
+  dplyr::mutate(A_inter_type = ifelse(actioni==0,0,as.numeric(message_interaction_type)),
+         prob_A_inter_type = ifelse(actioni==0, probi, probi * (1/3)),
+         A_length_type = ifelse(actioni==0,0,
+                                ifelse(message_length == "Short",1,
+                                       ifelse(message_length == "Long", 2, 999))),
+         prob_A_length_type = ifelse(actioni==0, probi, probi * (1/2)),
+         # adjust class to be compatible with source script
+         week_day_binary = as.numeric(week_day_binary),
+         timeofday = as.integer(timeofday),
+         I = 1) 
+
+#categorical treatment (no message=0, interaction type A=1, B=2, C=3)
+fit.5  <- wcls_categorical_treatment(
+  dta = df_engag_categ,
+  decision_time_varname = "decision_point",
+  id_varname = "id",
+  treatment_varname = "A_inter_type",
+  outcome_varname = "engagement_multi_c",
+  control_varname = c("timeofday", "week_day_binary", "cov_interv_engag_72hrs_c", "cov_humtch_binary_48hrs_c"),
+  moderator_varname = c(),
+  rand_prob_varname = "prob_A_inter_type",
+  estimator_initial_value = NULL,
+  trt_level = 3
+)
+
+print("beta causal excursion effect estimates for message interaction type,")
+print("where 0=no message, 1=A (acknowledge), 2=B (click link), 3=C (fill-in-blank):")
+round(fit.5$beta_hat,digits=4)
+print("standard errors:")
+round(fit.5$beta_se_adjusted,digits=4)
+print("95% confidence intervals:")
+round(fit.5$conf_int_adjusted_t,digits=4)
+
+#categorical treatment (no message=0, short length message=1, long message=2)
+fit.6  <- wcls_categorical_treatment(
+  dta = df_engag_categ,
+  decision_time_varname = "decision_point",
+  id_varname = "id",
+  treatment_varname = "A_length_type",
+  outcome_varname = "engagement_multi_c",
+  control_varname = c("timeofday", "week_day_binary", "cov_interv_engag_72hrs_c", "cov_humtch_binary_48hrs_c"),
+  moderator_varname = c(),
+  rand_prob_varname = "prob_A_length_type",
+  estimator_initial_value = NULL,
+  trt_level = 2
+)
+print("beta causal excursion effect estimates for message length type,")
+print("where 0=no message, 1=short (<=150 characters),  2=long (>=200 chararacters):")
+round(fit.6$beta_hat,digits=4)
+print("standard errors")
+round(fit.6$beta_se_adjusted,digits=4)
+print("95% confidence intervals")
+round(fit.6$conf_int_adjusted_t,digits=4)
 
 ```
   
