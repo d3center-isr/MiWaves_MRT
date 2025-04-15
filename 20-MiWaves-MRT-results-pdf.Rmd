@@ -2822,6 +2822,10 @@ df_categ <- df %>%
          A_length_type = ifelse(actioni==0,0,
                                 ifelse(message_length == "Short",1,
                                        ifelse(message_length == "Long", 2, 999))),
+         # create additional version where reference category is coded as "long message" as opposed to "no message" in order to assess difference in effect attributed to short versus long messages
+         A_length_type_reflong = ifelse(actioni==0,2,
+                                ifelse(message_length == "Short",1,
+                                       ifelse(message_length == "Long", 0, 999))),
          prob_A_length_type = ifelse(actioni==0, probi, probi * (1/2)),
          # adjust class to be compatible with source script
          week_day_binary = as.numeric(week_day_binary),
@@ -2923,6 +2927,27 @@ round(fit.4$beta_se_adjusted,digits=4)
 print("95% confidence intervals")
 round(fit.4$conf_int_adjusted_t,digits=4)
 
+
+#categorical treatment (long length message=0, short message=1, no message=2), where change reference category
+fit.4  <- wcls_categorical_treatment(
+  dta = df_categ,
+  decision_time_varname = "decision_point",
+  id_varname = "id",
+  treatment_varname = "A_length_type_reflong",
+  outcome_varname = "engagement_multi_c",
+  control_varname = c("timeofday", "week_day_binary", "cov_interv_engag_72hrs_c", "cov_humtch_binary_48hrs_c"),
+  moderator_varname = c(),
+  rand_prob_varname = "prob_A_length_type",
+  estimator_initial_value = NULL,
+  trt_level = 2
+)
+print("beta causal excursion effect estimates for message length type,")
+print("where 0=long (>=200 chararacters), 1=short (<=150 characters),  2=no message:")
+round(fit.4$beta_hat,digits=4)
+print("standard errors")
+round(fit.4$beta_se_adjusted,digits=4)
+print("95% confidence intervals")
+round(fit.4$conf_int_adjusted_t,digits=4)
 ```
 The results below reflect the engagement sample size, that does not additionally remove decision points without an EMA completion.
   
